@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Propaganda Lens",
+    "slug": "propaganda-lens",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a1a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.propagandalens.app",
+      "associatedDomains": ["applinks:propaganda-lens.app"],
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs access to camera to analyze images."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a1a1a"
+      },
+      "package": "com.propagandalens.app",
+      "intentFilters": [
+        {
+          "action": "SEND",
+          "category": ["DEFAULT"],
+          "type": "text/plain"
+        },
+        {
+          "action": "SEND",
+          "category": ["DEFAULT"],
+          "type": "text/*"
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [],
+    "scheme": "propaganda-lens",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ]
+  }
+}

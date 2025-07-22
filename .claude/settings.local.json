@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx expo:*)",
+      "Bash(mkdir:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout 10 npx expo start --clear)",
+      "Bash(npm start)",
+      "Bash(taskkill:*)",
+      "Bash(cmd /c:*)",
+      "Bash(find:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": []
+  }
+}
