@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import * as Linking from 'expo-linking';
+import { ThemeProvider } from '../contexts/theme-context';
 
 export default function RootLayout() {
   useEffect(() => {
@@ -18,8 +19,10 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ title: 'Propaganda Lens' }} />
-    </Stack>
+    <ThemeProvider>
+      <Stack>
+        <Stack.Screen name="index" options={{ title: 'Propaganda Lens' }} />
+      </Stack>
+    </ThemeProvider>
   );
 }

@@ -1,0 +1,34 @@
+import React from 'react';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../contexts/theme-context';
+
+export function ThemeSwitcher() {
+  const { theme, toggleTheme, colors } = useTheme();
+
+  return (
+    <TouchableOpacity 
+      style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]} 
+      onPress={toggleTheme}
+    >
+      <Text style={[styles.text, { color: colors.text }]}>
+        {theme === 'light' ? '🌙' : '☀️'} {theme === 'light' ? 'Dark' : 'Light'}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 80,
+  },
+  text: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+});

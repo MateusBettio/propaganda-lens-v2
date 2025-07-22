@@ -2,6 +2,8 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Touch
 import { useState } from 'react';
 import { useAnalysis } from '../hooks/use-analysis';
 import { detectContentType } from '../utils/content-detector';
+import { useTheme } from '../contexts/theme-context';
+import { ThemeSwitcher } from '../components/theme-switcher';
 
 // URL validation function
 function isValidURL(string: string): boolean {
@@ -17,6 +19,7 @@ export default function HomeScreen() {
   const [inputContent, setInputContent] = useState<string>('');
   const [validationError, setValidationError] = useState<string>('');
   const { loading, error, result, analyze } = useAnalysis();
+  const { colors } = useTheme();
 
   const handleInputChange = (text: string) => {
     setInputContent(text);
@@ -53,14 +56,20 @@ export default function HomeScreen() {
   const isInputValid = inputContent.trim() && isValidURL(inputContent.trim());
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Propaganda Lens V2</Text>
-      <Text style={styles.subtitle}>Enter a URL to analyze</Text>
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.header}>
+        <View style={styles.titleContainer}>
+          <Text style={[styles.title, { color: colors.text }]}>Propaganda Lens V2</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Enter a URL to analyze</Text>
+        </View>
+        <ThemeSwitcher />
+      </View>
       
       <TextInput
         style={[
           styles.textInput,
-          validationError ? styles.textInputError : null
+          { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
+          validationError ? { borderColor: colors.error } : null
         ]}
         multiline
         numberOfLines={3}
@@ -74,17 +83,17 @@ export default function HomeScreen() {
       />
       
       {validationError ? (
-        <View style={styles.validationBox}>
-          <Text style={styles.validationText}>{validationError}</Text>
+        <View style={[styles.validationBox, { backgroundColor: colors.error + '15', borderLeftColor: colors.error }]}>
+          <Text style={[styles.validationText, { color: colors.error }]}>{validationError}</Text>
         </View>
       ) : null}
       
       <TouchableOpacity 
-        style={[styles.analyzeButton, (!isInputValid || loading) && styles.analyzeButtonDisabled]}
+        style={[styles.analyzeButton, { backgroundColor: colors.primary }, (!isInputValid || loading) && { backgroundColor: colors.textSecondary }]}
         onPress={handleAnalyze}
         disabled={loading || !isInputValid}
       >
-        <Text style={[styles.analyzeButtonText, (!isInputValid || loading) && styles.analyzeButtonTextDisabled]}>
+        <Text style={[styles.analyzeButtonText, (!isInputValid || loading) && { color: colors.background }]}>
           {loading ? "Analyzing..." : "Analyze Content"}
         </Text>
       </TouchableOpacity>
@@ -92,25 +101,25 @@ export default function HomeScreen() {
       {loading && <ActivityIndicator style={styles.loader} />}
       
       {error && (
-        <View style={styles.errorBox}>
-          <Text style={styles.errorText}>{error}</Text>
+        <View style={[styles.errorBox, { backgroundColor: colors.error + '15', borderLeftColor: colors.error }]}>
+          <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
         </View>
       )}
       
       {result && (
         <View style={styles.resultsContainer}>
           {/* Header Card */}
-          <View style={styles.headerCard}>
-            <Text style={styles.resultTitle}>Analysis Complete</Text>
+          <View style={[styles.headerCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.resultTitle, { color: colors.text }]}>Analysis Complete</Text>
             {result.sourceInfo && (
-              <Text style={styles.sourceText}>Source: {new URL(result.sourceInfo.sourceUrl).hostname}</Text>
+              <Text style={[styles.sourceText, { color: colors.textSecondary }]}>Source: {new URL(result.sourceInfo.sourceUrl).hostname}</Text>
             )}
           </View>
 
           {/* Score Card */}
-          <View style={styles.scoreCard}>
+          <View style={[styles.scoreCard, { backgroundColor: colors.card }]}>
             <View style={styles.scoreHeader}>
-              <Text style={styles.scoreLabel}>Manipulation Risk</Text>
+              <Text style={[styles.scoreLabel, { color: colors.text }]}>Manipulation Risk</Text>
               <View style={[
                 styles.scoreBadge,
                 result.manipulationScore <= 3 ? styles.scoreLow :
@@ -137,19 +146,19 @@ export default function HomeScreen() {
           </View>
 
           {/* Assessment Card */}
-          <View style={styles.assessmentCard}>
-            <Text style={styles.cardTitle}>Quick Assessment</Text>
-            <Text style={styles.assessmentText}>{result.quickAssessment}</Text>
+          <View style={[styles.assessmentCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Quick Assessment</Text>
+            <Text style={[styles.assessmentText, { color: colors.textSecondary }]}>{result.quickAssessment}</Text>
           </View>
           
           {/* Techniques Card */}
           {result.techniques && result.techniques.length > 0 && (
-            <View style={styles.techniquesCard}>
-              <Text style={styles.cardTitle}>Propaganda Techniques Detected ({result.techniques.length})</Text>
+            <View style={[styles.techniquesCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Propaganda Techniques Detected ({result.techniques.length})</Text>
               {result.techniques.map((technique, index) => (
-                <Pressable key={index} style={styles.techniqueItem}>
+                <Pressable key={index} style={[styles.techniqueItem, { backgroundColor: colors.surface }]}>
                   <View style={styles.techniqueHeader}>
-                    <Text style={styles.techniqueName}>{technique.name}</Text>
+                    <Text style={[styles.techniqueName, { color: colors.text }]}>{technique.name}</Text>
                     <View style={[
                       styles.confidenceBadge,
                       technique.confidence === 'high' ? styles.confidenceHigh :
@@ -158,11 +167,11 @@ export default function HomeScreen() {
                       <Text style={styles.confidenceText}>{technique.confidence}</Text>
                     </View>
                   </View>
-                  <Text style={styles.techniqueDescription}>{technique.description}</Text>
+                  <Text style={[styles.techniqueDescription, { color: colors.textSecondary }]}>{technique.description}</Text>
                   {technique.example && (
                     <View style={styles.exampleContainer}>
                       <Text style={styles.exampleLabel}>Example:</Text>
-                      <Text style={styles.exampleText}>"{technique.example}"</Text>
+                      <Text style={[styles.exampleText, { color: colors.text }]}>"{technique.example}"</Text>
                     </View>
                   )}
                 </Pressable>
@@ -172,20 +181,20 @@ export default function HomeScreen() {
 
           {/* Counter Perspective Card */}
           {result.counterPerspective && (
-            <View style={styles.counterCard}>
-              <Text style={styles.cardTitle}>Alternative Perspective</Text>
-              <Text style={styles.counterText}>{result.counterPerspective}</Text>
+            <View style={[styles.counterCard, { backgroundColor: colors.success + '15', borderLeftColor: colors.success }]}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Alternative Perspective</Text>
+              <Text style={[styles.counterText, { color: colors.textSecondary }]}>{result.counterPerspective}</Text>
             </View>
           )}
 
           {/* Questions Card */}
           {result.reflectionQuestions && result.reflectionQuestions.length > 0 && (
-            <View style={styles.questionsCard}>
-              <Text style={styles.cardTitle}>Critical Thinking Questions</Text>
+            <View style={[styles.questionsCard, { backgroundColor: colors.warning + '15', borderLeftColor: colors.warning }]}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Critical Thinking Questions</Text>
               {result.reflectionQuestions.map((question, index) => (
                 <View key={index} style={styles.questionItem}>
-                  <Text style={styles.questionNumber}>{index + 1}.</Text>
-                  <Text style={styles.questionText}>{question}</Text>
+                  <Text style={[styles.questionNumber, { color: colors.warning }]}>{index + 1}.</Text>
+                  <Text style={[styles.questionText, { color: colors.textSecondary }]}>{question}</Text>
                 </View>
               ))}
             </View>
@@ -200,29 +209,31 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 16,
-    backgroundColor: '#f8fafc',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 32,
+  },
+  titleContainer: {
+    flex: 1,
+    marginRight: 16,
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#1e293b',
     marginBottom: 8,
-    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#64748b',
-    marginBottom: 32,
-    textAlign: 'center',
   },
   textInput: {
     width: '100%',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
     borderRadius: 12,
     padding: 16,
     minHeight: 80,
-    backgroundColor: '#ffffff',
     marginBottom: 12,
     textAlignVertical: 'top',
     fontSize: 16,
@@ -232,30 +243,21 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  textInputError: {
-    borderColor: '#ef4444',
-    borderWidth: 2,
-  },
   validationBox: {
     marginBottom: 20,
     padding: 12,
-    backgroundColor: '#fef2f2',
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#ef4444',
     width: '100%',
   },
   validationText: {
-    color: '#dc2626',
     fontSize: 14,
   },
   analyzeButton: {
-    backgroundColor: '#3b82f6',
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#3b82f6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -263,17 +265,10 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 16,
   },
-  analyzeButtonDisabled: {
-    backgroundColor: '#94a3b8',
-    shadowOpacity: 0.1,
-  },
   analyzeButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  analyzeButtonTextDisabled: {
-    color: '#cbd5e1',
   },
   loader: {
     marginTop: 20,
@@ -282,14 +277,11 @@ const styles = StyleSheet.create({
   errorBox: {
     marginTop: 20,
     padding: 16,
-    backgroundColor: '#fef2f2',
     borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#ef4444',
     width: '100%',
   },
   errorText: {
-    color: '#dc2626',
     fontSize: 14,
     lineHeight: 20,
   },
@@ -299,7 +291,6 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   headerCard: {
-    backgroundColor: '#ffffff',
     padding: 20,
     borderRadius: 16,
     shadowColor: '#000',
@@ -311,16 +302,13 @@ const styles = StyleSheet.create({
   resultTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1e293b',
     marginBottom: 4,
   },
   sourceText: {
     fontSize: 14,
-    color: '#64748b',
     fontStyle: 'italic',
   },
   scoreCard: {
-    backgroundColor: '#ffffff',
     padding: 20,
     borderRadius: 16,
     shadowColor: '#000',
@@ -338,7 +326,6 @@ const styles = StyleSheet.create({
   scoreLabel: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#374151',
   },
   scoreBadge: {
     flexDirection: 'row',
@@ -376,7 +363,6 @@ const styles = StyleSheet.create({
   scoreProgressMedium: { backgroundColor: '#f59e0b' },
   scoreProgressHigh: { backgroundColor: '#ef4444' },
   assessmentCard: {
-    backgroundColor: '#ffffff',
     padding: 20,
     borderRadius: 16,
     shadowColor: '#000',
@@ -388,16 +374,13 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#374151',
     marginBottom: 12,
   },
   assessmentText: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#4b5563',
   },
   techniquesCard: {
-    backgroundColor: '#ffffff',
     padding: 20,
     borderRadius: 16,
     shadowColor: '#000',
@@ -407,7 +390,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   techniqueItem: {
-    backgroundColor: '#f8fafc',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
@@ -423,7 +405,6 @@ const styles = StyleSheet.create({
   techniqueName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1e293b',
     flex: 1,
   },
   confidenceBadge: {
@@ -443,7 +424,6 @@ const styles = StyleSheet.create({
   techniqueDescription: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#4b5563',
     marginBottom: 8,
   },
   exampleContainer: {
@@ -463,15 +443,12 @@ const styles = StyleSheet.create({
   exampleText: {
     fontSize: 13,
     fontStyle: 'italic',
-    color: '#374151',
     lineHeight: 18,
   },
   counterCard: {
-    backgroundColor: '#f0fdf4',
     padding: 20,
     borderRadius: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#22c55e',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -481,14 +458,11 @@ const styles = StyleSheet.create({
   counterText: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#166534',
   },
   questionsCard: {
-    backgroundColor: '#fefce8',
     padding: 20,
     borderRadius: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#eab308',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -502,14 +476,12 @@ const styles = StyleSheet.create({
   questionNumber: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ca8a04',
     marginRight: 8,
     minWidth: 20,
   },
   questionText: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#a16207',
     flex: 1,
   },
 });
