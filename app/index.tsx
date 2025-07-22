@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Pressable, Image } from 'react-native';
 import { useState } from 'react';
 import { useAnalysis } from '../hooks/use-analysis';
 import { detectContentType } from '../utils/content-detector';
@@ -102,48 +102,31 @@ export default function HomeScreen() {
       
       {error && (
         <View style={[styles.errorBox, { backgroundColor: colors.error + '15', borderLeftColor: colors.error }]}>
+          <Text style={[styles.errorHeading, { color: colors.error }]}>Analysis could not be completed</Text>
           <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
         </View>
       )}
       
-      {result && (
+      {result && !error && (
         <View style={styles.resultsContainer}>
           {/* Header Card */}
           <View style={[styles.headerCard, { backgroundColor: colors.card }]}>
             <Text style={[styles.resultTitle, { color: colors.text }]}>Analysis Complete</Text>
             {result.sourceInfo && (
-              <Text style={[styles.sourceText, { color: colors.textSecondary }]}>Source: {new URL(result.sourceInfo.sourceUrl).hostname}</Text>
+              <View style={styles.sourceContainer}>
+                {result.sourceInfo.extractedData?.thumbnail && (
+                  <Image source={{ uri: result.sourceInfo.extractedData.thumbnail }} style={styles.thumbnail} />
+                )}
+                <View style={styles.sourceTextContainer}>
+                  <Text style={[styles.sourceText, { color: colors.textSecondary }]}>Source: {new URL(result.sourceInfo.sourceUrl).hostname}</Text>
+                  {result.sourceInfo.extractedData?.title && (
+                    <Text style={[styles.sourceTitle, { color: colors.text }]} numberOfLines={2}>{result.sourceInfo.extractedData.title}</Text>
+                  )}
+                </View>
+              </View>
             )}
           </View>
 
-          {/* Score Card */}
-          <View style={[styles.scoreCard, { backgroundColor: colors.card }]}>
-            <View style={styles.scoreHeader}>
-              <Text style={[styles.scoreLabel, { color: colors.text }]}>Manipulation Risk</Text>
-              <View style={[
-                styles.scoreBadge,
-                result.manipulationScore <= 3 ? styles.scoreLow :
-                result.manipulationScore <= 6 ? styles.scoreMedium : styles.scoreHigh
-              ]}>
-                <Text style={styles.scoreNumber}>{result.manipulationScore}</Text>
-                <Text style={styles.scoreMax}>/10</Text>
-              </View>
-            </View>
-            <View style={[
-              styles.scoreBar,
-              result.manipulationScore <= 3 ? styles.scoreBarLow :
-              result.manipulationScore <= 6 ? styles.scoreBarMedium : styles.scoreBarHigh
-            ]}>
-              <View 
-                style={[
-                  styles.scoreProgress,
-                  { width: `${(result.manipulationScore / 10) * 100}%` },
-                  result.manipulationScore <= 3 ? styles.scoreProgressLow :
-                  result.manipulationScore <= 6 ? styles.scoreProgressMedium : styles.scoreProgressHigh
-                ]}
-              />
-            </View>
-          </View>
 
           {/* Assessment Card */}
           <View style={[styles.assessmentCard, { backgroundColor: colors.card }]}>
@@ -155,27 +138,36 @@ export default function HomeScreen() {
           {result.techniques && result.techniques.length > 0 && (
             <View style={[styles.techniquesCard, { backgroundColor: colors.card }]}>
               <Text style={[styles.cardTitle, { color: colors.text }]}>Propaganda Techniques Detected ({result.techniques.length})</Text>
-              {result.techniques.map((technique, index) => (
-                <Pressable key={index} style={[styles.techniqueItem, { backgroundColor: colors.surface }]}>
-                  <View style={styles.techniqueHeader}>
-                    <Text style={[styles.techniqueName, { color: colors.text }]}>{technique.name}</Text>
-                    <View style={[
-                      styles.confidenceBadge,
-                      technique.confidence === 'high' ? styles.confidenceHigh :
-                      technique.confidence === 'medium' ? styles.confidenceMedium : styles.confidenceLow
-                    ]}>
-                      <Text style={styles.confidenceText}>{technique.confidence}</Text>
+              {result.techniques.map((technique, index) => {
+                console.log(`Technique ${index}:`, JSON.stringify(technique, null, 2));
+                return (
+                  <Pressable key={index} style={[styles.techniqueItem, { backgroundColor: colors.surface }]}>
+                    <View style={styles.techniqueHeader}>
+                      <Text style={[styles.techniqueName, { color: colors.text }]}>{technique.name}</Text>
+                      <View style={[
+                        styles.confidenceBadge,
+                        technique.confidence === 'high' ? styles.confidenceHigh :
+                        technique.confidence === 'medium' ? styles.confidenceMedium : styles.confidenceLow
+                      ]}>
+                        <Text style={styles.confidenceText}>{technique.confidence}</Text>
+                      </View>
                     </View>
-                  </View>
-                  <Text style={[styles.techniqueDescription, { color: colors.textSecondary }]}>{technique.description}</Text>
-                  {technique.example && (
-                    <View style={styles.exampleContainer}>
-                      <Text style={styles.exampleLabel}>Example:</Text>
-                      <Text style={[styles.exampleText, { color: colors.text }]}>"{technique.example}"</Text>
-                    </View>
-                  )}
-                </Pressable>
-              ))}
+                    <Text style={[styles.techniqueDescription, { color: colors.textSecondary }]}>{technique.description}</Text>
+                    {technique.example && technique.example.trim() && (
+                      <View style={styles.exampleContainer}>
+                        <Text style={styles.exampleLabel}>Example:</Text>
+                        <Text style={[styles.exampleText, { color: colors.text }]}>"{technique.example}"</Text>
+                      </View>
+                    )}
+                    {/* Debug info */}
+                    {__DEV__ && (
+                      <Text style={{ fontSize: 10, color: 'red' }}>
+                        Example: {technique.example ? `"${technique.example}"` : 'null/undefined'}
+                      </Text>
+                    )}
+                  </Pressable>
+                );
+              })}
             </View>
           )}
 
@@ -281,6 +273,11 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     width: '100%',
   },
+  errorHeading: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
   errorText: {
     fontSize: 14,
     lineHeight: 20,
@@ -304,64 +301,31 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 4,
   },
+  sourceContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 8,
+  },
+  thumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
+    backgroundColor: '#f0f0f0',
+  },
+  sourceTextContainer: {
+    flex: 1,
+  },
   sourceText: {
     fontSize: 14,
     fontStyle: 'italic',
+    marginBottom: 4,
   },
-  scoreCard: {
-    padding: 20,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  scoreHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  scoreLabel: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  scoreBadge: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  scoreLow: { backgroundColor: '#d1fae5' },
-  scoreMedium: { backgroundColor: '#fef3c7' },
-  scoreHigh: { backgroundColor: '#fee2e2' },
-  scoreNumber: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  scoreMax: {
+  sourceTitle: {
     fontSize: 16,
-    fontWeight: '500',
-    marginLeft: 2,
+    fontWeight: '600',
+    lineHeight: 20,
   },
-  scoreBar: {
-    height: 8,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  scoreProgress: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  scoreBarLow: { backgroundColor: '#e5e7eb' },
-  scoreBarMedium: { backgroundColor: '#e5e7eb' },
-  scoreBarHigh: { backgroundColor: '#e5e7eb' },
-  scoreProgressLow: { backgroundColor: '#10b981' },
-  scoreProgressMedium: { backgroundColor: '#f59e0b' },
-  scoreProgressHigh: { backgroundColor: '#ef4444' },
   assessmentCard: {
     padding: 20,
     borderRadius: 16,

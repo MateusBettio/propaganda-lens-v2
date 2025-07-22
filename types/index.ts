@@ -15,6 +15,21 @@ export interface AnalysisResult {
   quickAssessment: string;
   counterPerspective: string;
   reflectionQuestions: string[];
+  sourceInfo?: SourceInfo;
+}
+
+export interface SourceInfo {
+  sourceUrl: string;
+  contentType: string;
+  extractedData?: {
+    type: string;
+    thumbnail?: string;
+    imageUrl?: string;
+    videoId?: string;
+    title?: string;
+    description?: string;
+    preview?: string;
+  };
 }
 
 export interface Technique {

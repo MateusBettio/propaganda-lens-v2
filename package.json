@@ -12,7 +12,7 @@
   "dependencies": {
     "@gorhom/bottom-sheet": "^4.6.0",
     "@react-native-async-storage/async-storage": "^2.1.2",
-    "axios": "^1.7.0",
+    "@supabase/supabase-js": "^2.52.0",
     "expo": "~53.0.0",
     "expo-auth-session": "~6.2.1",
     "expo-constants": "~17.1.7",
@@ -30,9 +30,9 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
-    "@types/react": "~18.2.0",
+    "@types/react": "~19.0.10",
     "@types/react-native": "~0.73.0",
-    "typescript": "~5.3.3"
+    "typescript": "~5.8.3"
   },
   "private": true
 }
