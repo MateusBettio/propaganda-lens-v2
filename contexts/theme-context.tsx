@@ -34,16 +34,16 @@ const lightColors = {
 };
 
 const darkColors = {
-  background: '#0f172a',
-  surface: '#1e293b',
+  background: '#121212',
+  surface: '#1e1e1e',
   primary: '#60a5fa',
-  text: '#f8fafc',
-  textSecondary: '#cbd5e1',
-  border: '#334155',
+  text: '#ffffff',
+  textSecondary: '#b3b3b3',
+  border: '#2a2a2a',
   success: '#34d399',
   warning: '#fbbf24',
   error: '#f87171',
-  card: '#1e293b',
+  card: '#1e1e1e',
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);

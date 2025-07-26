@@ -16,6 +16,15 @@ export interface AnalysisResult {
   counterPerspective: string;
   reflectionQuestions: string[];
   sourceInfo?: SourceInfo;
+  // New multilingual fields
+  language?: 'en' | 'pt-br' | 'es';
+  languageConfidence?: number;
+  content?: string;
+  summary?: string;
+  indicators?: Record<string, any>;
+  confidence?: number;
+  sourceMetadata?: Record<string, any>;
+  extractionFlow?: any;
 }
 
 export interface SourceInfo {
@@ -29,6 +38,10 @@ export interface SourceInfo {
     title?: string;
     description?: string;
     preview?: string;
+    embedHtml?: string;
+    embedUrl?: string;
+    tweetId?: string;
+    postId?: string;
   };
 }
 
