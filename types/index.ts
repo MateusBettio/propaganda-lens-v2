@@ -21,10 +21,10 @@ export interface AnalysisResult {
   languageConfidence?: number;
   content?: string;
   summary?: string;
-  indicators?: Record<string, any>;
+  indicators?: string[];
   confidence?: number;
-  sourceMetadata?: Record<string, any>;
-  extractionFlow?: any;
+  sourceMetadata?: Record<string, unknown>;
+  extractionFlow?: ExtractionFlow;
 }
 
 export interface SourceInfo {
@@ -50,4 +50,29 @@ export interface Technique {
   description: string;
   confidence: 'low' | 'medium' | 'high';
   example: string;
+}
+
+export interface ExtractionFlow {
+  summary: string;
+  steps: string[];
+  contentInfo: {
+    source: string;
+    extractionMethod?: string;
+    contentLength: number;
+    hasTranscript?: boolean;
+    thumbnailFound?: boolean;
+  };
+}
+
+export interface ColorScheme {
+  background: string;
+  surface: string;
+  card: string;
+  text: string;
+  textSecondary: string;
+  primary: string;
+  error: string;
+  warning: string;
+  success: string;
+  border: string;
 }

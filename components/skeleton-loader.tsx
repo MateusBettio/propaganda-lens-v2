@@ -1,12 +1,12 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated, ViewStyle, DimensionValue } from 'react-native';
 import { useTheme } from '../contexts/theme-context';
 
 interface SkeletonLoaderProps {
-  width?: number | string;
+  width?: DimensionValue;
   height?: number;
   borderRadius?: number;
-  style?: any;
+  style?: ViewStyle;
 }
 
 export function SkeletonLoader({ width = '100%', height = 20, borderRadius = 4, style }: SkeletonLoaderProps) {

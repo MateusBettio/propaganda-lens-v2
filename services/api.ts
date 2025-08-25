@@ -71,40 +71,100 @@ function getLocalizedString(key: string, language: string): string {
 
 export async function analyzeContent(content: string, type: string): Promise<AnalysisResult> {
   try {
-    console.log('=== DIRECT ANALYSIS REQUEST ===');
+    console.log('=== EXTRACTION QUEUE REQUEST ===');
     console.log('URL:', content);
     console.log('Content type:', type);
 
-    // Use the direct analyze endpoint
-    console.log('Calling analyze endpoint...');
-    const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze', {
-      body: { content: content },
-    });
-
-    if (analysisError) {
-      console.error('Analyze function error:', analysisError);
-      throw new Error(`Analysis failed: ${analysisError.message}`);
-    }
-
-    console.log('=== ANALYSIS SUCCESS ===');
+    // Check if it's a Twitter/X URL - use proper extraction flow
+    const isTwitterUrl = /(?:twitter\.com|x\.com)/i.test(content);
     
-    // The analyze endpoint returns the analysis directly, not wrapped in database format
-    // Transform to match frontend expectations
-    return {
-      techniques: analysisData.techniques || [],
-      manipulationScore: 0, // Not used in new format
-      quickAssessment: analysisData.quickAssessment || '',
-      counterPerspective: analysisData.counterPerspective || '',
-      reflectionQuestions: analysisData.reflectionQuestions || [],
-      sourceInfo: analysisData.sourceInfo || {
-        sourceUrl: content,
-        contentType: type,
-      },
-      // Additional fields from the response
-      language: analysisData.language || 'en',
-      languageConfidence: analysisData.languageConfidence || 0.5,
-      extractionFlow: analysisData.extractionFlow,
-    };
+    console.log('🔍 URL analysis:', content);
+    console.log('🔍 Is Twitter URL?', isTwitterUrl);
+    
+    if (isTwitterUrl) {
+      console.log('🐦 Twitter URL detected - using extraction queue');
+      alert('DEBUG: Using Twitter extraction flow!');
+      
+      // Step 1: Submit to extraction queue
+      const { data: extractData, error: extractError } = await supabase.functions.invoke('extract', {
+        body: { url: content },
+      });
+
+      if (extractError) {
+        console.error('Extract function error:', extractError);
+        throw new Error(`Extraction failed: ${extractError.message}`);
+      }
+
+      console.log('✅ Job queued:', extractData);
+      const jobId = extractData.job_id;
+
+      // Step 2: Trigger worker to process the queue
+      console.log('🔄 Triggering worker...');
+      const { data: workerData, error: workerError } = await supabase.functions.invoke('worker', {
+        body: {},
+      });
+
+      if (workerError) {
+        console.warn('Worker trigger warning:', workerError);
+      }
+
+      // Step 3: Poll for results
+      console.log('⏳ Polling for results...');
+      const maxAttempts = 30; // 30 seconds max
+      let attempts = 0;
+
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        
+        const { data: result, error: resultError } = await supabase
+          .from('analysis')
+          .select('*')
+          .eq('url', content)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (!resultError && result) {
+          console.log('✅ Analysis complete:', result);
+          return transformBackendResponse(result, content);
+        }
+
+        attempts++;
+      }
+
+      throw new Error('Analysis timeout - please try again');
+    } else {
+      // Non-Twitter URLs: use direct analyze endpoint
+      console.log('🌐 Non-Twitter URL - using direct analysis');
+      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze', {
+        body: { content: content },
+      });
+
+      if (analysisError) {
+        console.error('Analyze function error:', analysisError);
+        throw new Error(`Analysis failed: ${analysisError.message}`);
+      }
+
+      console.log('=== ANALYSIS SUCCESS ===');
+      
+      // The analyze endpoint returns the analysis directly, not wrapped in database format
+      // Transform to match frontend expectations
+      return {
+        techniques: analysisData.techniques || [],
+        manipulationScore: 0, // Not used in new format
+        quickAssessment: analysisData.quickAssessment || '',
+        counterPerspective: analysisData.counterPerspective || '',
+        reflectionQuestions: analysisData.reflectionQuestions || [],
+        sourceInfo: analysisData.sourceInfo || {
+          sourceUrl: content,
+          contentType: type,
+        },
+        // Additional fields from the response
+        language: analysisData.language || 'en',
+        languageConfidence: analysisData.languageConfidence || 0.5,
+        extractionFlow: analysisData.extractionFlow,
+      };
+    }
   } catch (error) {
     console.error('Analysis failed:', error);
     
