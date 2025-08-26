@@ -17,13 +17,15 @@ interface ThemeContextType {
     warning: string;
     error: string;
     card: string;
+    white: string;
+    black: string;
   };
 }
 
 const lightColors = {
   background: '#f8fafc',
   surface: '#ffffff',
-  primary: '#3b82f6',
+  primary: '#000000', // Black on light mode
   text: '#1e293b',
   textSecondary: '#64748b',
   border: '#e2e8f0',
@@ -31,12 +33,14 @@ const lightColors = {
   warning: '#f59e0b',
   error: '#ef4444',
   card: '#ffffff',
+  white: '#ffffff',
+  black: '#000000',
 };
 
 const darkColors = {
   background: '#121212',
   surface: '#1e1e1e',
-  primary: '#60a5fa',
+  primary: '#ffffff', // White on dark mode
   text: '#ffffff',
   textSecondary: '#b3b3b3',
   border: '#2a2a2a',
@@ -44,6 +48,8 @@ const darkColors = {
   warning: '#fbbf24',
   error: '#f87171',
   card: '#1e1e1e',
+  white: '#ffffff',
+  black: '#000000',
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);

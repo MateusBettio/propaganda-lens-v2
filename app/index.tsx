@@ -1,57 +1,81 @@
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Animated, KeyboardAvoidingView, Platform, TouchableOpacity, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useRef, useEffect } from 'react';
 import { useAnalysis } from '../hooks/use-analysis';
-import { detectContentType } from '../utils/content-detector';
 import { useTheme } from '../contexts/theme-context';
-import { ThemeSwitcher } from '../components/theme-switcher';
 import { Logo } from '../components/logo';
-import { TwitterSkeleton, WebpageSkeleton } from '../components/skeleton-loader';
+import { InputSection } from '../components/InputSection';
+import { ErrorMessage } from '../components/ErrorMessage';
+import { AnalysisSkeleton } from '../components/AnalysisSkeleton';
 import { AnalysisResults } from '../components/analysis-results';
-
-// URL validation function
-function isValidURL(string: string): boolean {
-  try {
-    const url = new URL(string);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
-
+import { Carousel } from '../components/Carousel';
+import CounterRing from '../components/CounterRing/CounterRing';
 
 export default function HomeScreen() {
-  const [inputContent, setInputContent] = useState<string>('');
   const [validationError, setValidationError] = useState<string>('');
-  const { loading, error, result, analyze } = useAnalysis();
-  const { colors } = useTheme();
+  const { loading, error, result, analyze, clearError } = useAnalysis();
+  const { colors, toggleTheme } = useTheme();
+  const counterRef = useRef<any>(null);
+
+  // Force clear old persistence keys on mount
+  useEffect(() => {
+    const clearOldPersistence = async () => {
+      try {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        await AsyncStorage.removeItem('free_analysis_credits');
+        await AsyncStorage.removeItem('free_analysis_credits_v2');
+        await AsyncStorage.removeItem('free_analysis_credits_v3');
+        console.log('Cleared old counter persistence');
+      } catch (error) {
+        console.log('Could not clear old persistence (AsyncStorage not available)');
+      }
+    };
+    clearOldPersistence();
+  }, []);
+  const insets = useSafeAreaInsets();
   const autoAnalyzeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastAnalyzedUrlRef = useRef<string>('');
+  const lastAnalyzedContentRef = useRef<string>('');
   const skeletonOpacity = useRef(new Animated.Value(0)).current;
   const contentOpacity = useRef(new Animated.Value(0)).current;
 
-  const handleInputChange = (text: string) => {
-    setInputContent(text);
-    setValidationError(''); // Clear validation error when user types
+  const handleSubmit = async (content: string, image?: string) => {
+    setValidationError('');
     
-    // Clear any existing timeout
-    if (autoAnalyzeTimeoutRef.current) {
-      clearTimeout(autoAnalyzeTimeoutRef.current);
+    const currentCredits = counterRef.current?.getValue() || 0;
+    if (currentCredits <= 0) {
+      setValidationError('You have reached your free tier limit. Upgrade to continue.');
+      return;
     }
     
-    // Auto-analyze if a valid URL is pasted (but not if we're already loading or if it's the same URL)
-    const trimmedText = text.trim();
-    if (trimmedText && isValidURL(trimmedText) && !loading && trimmedText !== lastAnalyzedUrlRef.current) {
-      // Debounce the auto-analysis to avoid multiple triggers
-      autoAnalyzeTimeoutRef.current = setTimeout(() => {
-        handleAnalyze();
-      }, 500); // 500ms delay to ensure user is done pasting/typing
+    if (image) {
+      // Handle image analysis
+      try {
+        console.log('Analyzing image:', image);
+        counterRef.current?.decrement();
+        // TODO: Implement image analysis
+        setValidationError('Image analysis coming soon!');
+      } catch (err) {
+        console.error('Analysis error:', err);
+        setValidationError('Failed to analyze image');
+      }
+    } else if (content) {
+      // Handle text/URL analysis
+      lastAnalyzedContentRef.current = content;
+      
+      try {
+        console.log('Analyzing content:', content);
+        counterRef.current?.decrement();
+        await analyze(content);
+      } catch (err) {
+        console.error('Analysis error:', err);
+        setValidationError('Failed to analyze content');
+      }
     }
   };
 
   // Handle loading animations
   useEffect(() => {
     if (loading) {
-      // Show skeleton with fade in
       contentOpacity.setValue(0);
       Animated.timing(skeletonOpacity, {
         toValue: 1,
@@ -59,7 +83,6 @@ export default function HomeScreen() {
         useNativeDriver: true,
       }).start();
     } else if (result && !error) {
-      // Fade out skeleton and fade in content
       Animated.sequence([
         Animated.timing(skeletonOpacity, {
           toValue: 0,
@@ -73,13 +96,11 @@ export default function HomeScreen() {
         }),
       ]).start();
     } else {
-      // Reset animations if there's an error or no result
       skeletonOpacity.setValue(0);
       contentOpacity.setValue(0);
     }
   }, [loading, result, error, skeletonOpacity, contentOpacity]);
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (autoAnalyzeTimeoutRef.current) {
@@ -88,179 +109,146 @@ export default function HomeScreen() {
     };
   }, []);
 
-  const handleAnalyze = async () => {
-    const contentToAnalyze = inputContent.trim();
-    
-    // Validation: require URL
-    if (!contentToAnalyze) {
-      setValidationError('Please enter a URL to analyze');
-      return;
-    }
-    
-    if (!isValidURL(contentToAnalyze)) {
-      setValidationError('Please enter a valid URL (must start with http:// or https://)');
-      return;
-    }
-    
-    // Clear validation error if we get here
-    setValidationError('');
-    
-    // Update the last analyzed URL to prevent duplicate auto-analysis
-    lastAnalyzedUrlRef.current = contentToAnalyze;
-    
-    try {
-      const contentType = detectContentType(contentToAnalyze);
-      console.log('Analyzing URL:', contentToAnalyze);
-      await analyze(contentToAnalyze, contentType);
-    } catch (err) {
-      console.error('Analysis error:', err);
-    }
-  };
 
-  // Check if input is valid for button state
-  const isInputValid = inputContent.trim() && isValidURL(inputContent.trim());
 
   return (
-    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Logo width={200} />
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Paste a URL to auto-analyze</Text>
-        </View>
-        <ThemeSwitcher />
-      </View>
-      
-      <TextInput
-        style={[
-          styles.textInput,
-          { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
-          validationError ? { borderColor: colors.error } : null
-        ]}
-        multiline
-        numberOfLines={3}
-        placeholder="Paste a URL here for instant analysis..."
-        placeholderTextColor={colors.textSecondary}
-        value={inputContent}
-        onChangeText={handleInputChange}
-        editable={!loading}
-        keyboardType="url"
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-      
-      {validationError ? (
-        <View style={[styles.validationBox, { backgroundColor: colors.error + '15', borderLeftColor: colors.error }]}>
-          <Text style={[styles.validationText, { color: colors.error }]}>{validationError}</Text>
-        </View>
-      ) : null}
-      
-      <TouchableOpacity 
-        style={[styles.analyzeButton, { backgroundColor: colors.primary }, (!isInputValid || loading) && { backgroundColor: colors.textSecondary }]}
-        onPress={handleAnalyze}
-        disabled={loading || !isInputValid}
+    <View style={[styles.homeScreenContainer, { backgroundColor: colors.background }]}>
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingWrapper}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
       >
-        <Text style={[styles.analyzeButtonText, (!isInputValid || loading) && { color: colors.background }]}>
-          {loading ? "Analyzing..." : "Manual Analysis"}
-        </Text>
-      </TouchableOpacity>
-
-      {loading && (
-        <Animated.View style={{ opacity: skeletonOpacity }}>
-          {(() => {
-            const contentType = detectContentType(inputContent.trim());
-            return contentType === 'twitter' ? <TwitterSkeleton /> : <WebpageSkeleton />;
-          })()}
-        </Animated.View>
-      )}
-      
-      {error && (
-        <View style={[styles.errorBox, { backgroundColor: colors.error + '15', borderLeftColor: colors.error }]}>
-          <Text style={[styles.errorHeading, { color: colors.error }]}>Analysis could not be completed</Text>
-          <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+        {/* App Header with Logo */}
+        <View style={styles.appHeader}>
+          <View style={styles.logoContainer}>
+            <Logo width={250} onPress={toggleTheme} />
+          </View>
+          <View style={{ alignItems: 'center' }}>
+            <CounterRing 
+              ref={counterRef}
+              label="Free Analysis"
+              defaultValue={10000}
+              max={10000}
+              persistenceKey="free_analysis_credits_v4"
+              onExhausted={() => setValidationError('You have reached your free tier limit. Upgrade to continue.')}
+            />
+            {__DEV__ && (
+              <TouchableOpacity 
+                style={{ 
+                  marginTop: 8, 
+                  padding: 4, 
+                  backgroundColor: colors.primary, 
+                  borderRadius: 4 
+                }}
+                onPress={() => counterRef.current?.reset(10000)}
+              >
+                <Text style={{ color: colors.background, fontSize: 10 }}>Reset</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-      )}
-      
-      {result && !error && (
-        <AnalysisResults result={result} contentOpacity={contentOpacity} />
-      )}
-    </ScrollView>
+        
+        {/* Validation Error Banner */}
+        {validationError && (
+          <View style={styles.errorBanner}>
+            <ErrorMessage 
+              title="Input Error"
+              message={validationError}
+              variant="warning"
+              onDismiss={() => setValidationError('')}
+            />
+          </View>
+        )}
+        
+        {/* Main Content Area */}
+        <ScrollView 
+          style={styles.mainContentScrollView}
+          contentContainerStyle={styles.mainContentContainer}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Default State - Trending Carousel */}
+          {!loading && !result && !error && (
+            <Carousel />
+          )}
+          
+          {/* Analysis Loading State */}
+          {loading && (
+            <Animated.View style={{ opacity: skeletonOpacity }}>
+              <AnalysisSkeleton />
+            </Animated.View>
+          )}
+          
+          {/* Analysis Error State */}
+          {error && (
+            <ErrorMessage 
+              message={error} 
+              onDismiss={clearError}
+            />
+          )}
+          
+          {/* Analysis Results Display */}
+          {result && !error && (
+            <Animated.View style={{ opacity: contentOpacity }}>
+              <AnalysisResults result={result} contentOpacity={contentOpacity} />
+            </Animated.View>
+          )}
+        </ScrollView>
+
+        {/* Bottom Input Panel */}
+        <View style={[
+          styles.bottomInputPanel, 
+          { 
+            backgroundColor: colors.background,
+            paddingBottom: insets.bottom,
+          }
+        ]}>
+          <InputSection 
+            onSubmit={handleSubmit}
+            loading={loading}
+          />
+        </View>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: 16,
+  homeScreenContainer: {
+    flex: 1,
+    ...(Platform.OS === 'web' && {
+      maxWidth: '100vw',
+      overflowX: 'hidden' as any,
+    }),
   },
-  header: {
+  keyboardAvoidingWrapper: {
+    flex: 1,
+  },
+  appHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 32,
+    paddingTop: Platform.OS === 'web' ? 40 : 90,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
-  titleContainer: {
+  logoContainer: {
     flex: 1,
-    marginRight: 16,
+    alignItems: 'flex-start',
   },
-  subtitle: {
-    fontSize: 16,
+  errorBanner: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
   },
-  textInput: {
-    width: '100%',
-    borderWidth: 1,
-    borderRadius: 12,
+  mainContentScrollView: {
+    flex: 1,
+  },
+  mainContentContainer: {
     padding: 16,
-    minHeight: 80,
-    marginBottom: 12,
-    textAlignVertical: 'top',
-    fontSize: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    paddingTop: 0,
+    flexGrow: 1,
   },
-  validationBox: {
-    marginBottom: 20,
-    padding: 12,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    width: '100%',
-  },
-  validationText: {
-    fontSize: 14,
-  },
-  analyzeButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-    width: '100%',
-    marginBottom: 16,
-  },
-  analyzeButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  errorBox: {
-    marginTop: 20,
-    padding: 16,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    width: '100%',
-  },
-  errorHeading: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  errorText: {
-    fontSize: 14,
-    lineHeight: 20,
+  bottomInputPanel: {
+    paddingTop: 16,
   },
 });

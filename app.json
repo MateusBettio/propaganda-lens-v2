@@ -40,7 +40,8 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "template": "./web/index.html"
     },
     "plugins": [],
     "scheme": "propaganda-lens",

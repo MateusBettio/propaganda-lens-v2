@@ -20,12 +20,14 @@ export function ThemeSwitcher() {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: 12,
+    borderRadius: 22,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 80,
+    height: 44,
+    minHeight: 44,
   },
   text: {
     fontSize: 14,
