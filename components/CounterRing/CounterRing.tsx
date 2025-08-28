@@ -283,7 +283,7 @@ const CounterRing = forwardRef<CounterRingHandle, CounterRingProps>(
           numberOfLines={2}
           ellipsizeMode="tail"
         >
-          {label}
+          {label.replace(' ', '\n')}
         </Text>
 
         <View style={[styles.ringContainer, { width: size, height: size }]}>

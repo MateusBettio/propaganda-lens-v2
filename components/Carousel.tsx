@@ -1,12 +1,13 @@
 import React, { useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Image, Dimensions } from 'react-native';
 import { useTheme } from '../contexts/theme-context';
+import { Button } from './Button';
 
 const { width: screenWidth } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth * 0.8;
 const CARD_MARGIN = 10;
 
-interface CarouselItem {
+export interface CarouselItem {
   id: string;
   image: string;
   title: string;
@@ -14,37 +15,44 @@ interface CarouselItem {
   timestamp: string;
 }
 
+interface CarouselProps {
+  onItemPress?: (item: CarouselItem) => void;
+}
+
 const placeholderItems: CarouselItem[] = [
   {
     id: '1',
-    image: 'https://via.placeholder.com/400x225/4a5568/ffffff?text=Analysis+1',
+    image: 'https://picsum.photos/400/225?random=1',
     title: 'Political Speech Analysis',
-    description: 'Detected 5 propaganda techniques in recent political speech about economic policy',
+    description: 'Detected 5 propaganda techniques including emotional manipulation and loaded language in recent political speech about economic policy',
     timestamp: '2 hours ago',
   },
   {
     id: '2', 
-    image: 'https://via.placeholder.com/400x225/6366f1/ffffff?text=Analysis+2',
+    image: 'https://picsum.photos/400/225?random=2',
     title: 'News Article Review',
-    description: 'Identified emotional manipulation and loaded language in viral news article',
+    description: 'Identified emotional manipulation and loaded language in viral news article about climate change',
     timestamp: '5 hours ago',
   },
   {
     id: '3',
-    image: 'https://via.placeholder.com/400x225/8b5cf6/ffffff?text=Analysis+3',
-    title: 'Social Media Post Check',
-    description: 'Found bandwagon and false dichotomy techniques in trending social post',
+    image: 'https://picsum.photos/400/225?random=3',
+    title: 'Satire Detection',
+    description: 'Content identified as satire - found exaggeration and irony techniques in trending social media post',
     timestamp: '1 day ago',
   },
 ];
 
-export function Carousel() {
+export function Carousel({ onItemPress }: CarouselProps) {
   const { colors } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
   const styles = createStyles(colors);
   
   const handleViewAnalysis = (item: CarouselItem) => {
     console.log('View analysis:', item.id);
+    if (onItemPress) {
+      onItemPress(item);
+    }
   };
 
   return (
@@ -78,12 +86,13 @@ export function Carousel() {
               <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={2}>
                 {item.description}
               </Text>
-              <Pressable 
-                style={[styles.button, { backgroundColor: colors.primary }]}
+              <Button 
+                variant="primary"
+                size="medium"
+                title="View Analysis"
                 onPress={() => handleViewAnalysis(item)}
-              >
-                <Text style={styles.buttonText}>View Analysis</Text>
-              </Pressable>
+                style={styles.button}
+              />
             </View>
           </Pressable>
         ))}
@@ -137,18 +146,7 @@ function createStyles(colors: any) {
     marginBottom: 12,
   },
   button: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 22,
     alignSelf: 'flex-start',
-    height: 44,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: colors.primary === colors.white ? colors.black : colors.white,
-    fontSize: 14,
-    fontWeight: '600',
   },
   });
 }

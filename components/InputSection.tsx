@@ -2,6 +2,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-nativ
 import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/theme-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Button } from './Button';
 import { ImagePreview } from './ImagePreview';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
@@ -15,6 +17,7 @@ interface InputSectionProps {
 
 export function InputSection({ onSubmit, loading }: InputSectionProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = createStyles(colors);
   const [mode, setMode] = useState<InputMode>('text');
   const [textContent, setTextContent] = useState('');
@@ -56,7 +59,7 @@ export function InputSection({ onSubmit, loading }: InputSectionProps) {
   const isValid = mode === 'text' ? textContent.trim().length > 0 : selectedImage !== null;
 
   return (
-    <View style={[styles.inputSectionContainer, { backgroundColor: colors.surface }]}>
+    <View style={[styles.inputSectionContainer, { backgroundColor: colors.surface, paddingBottom: insets.bottom }]}>
       {/* Mode Toggle Buttons - Centered */}
       <View style={styles.inputModeToggleWrapper}>
         <View style={styles.inputModeToggleButtons}>
@@ -78,7 +81,7 @@ export function InputSection({ onSubmit, loading }: InputSectionProps) {
               styles.inputModeButtonText,
               { color: mode === 'screenshot' ? (colors.primary === colors.white ? colors.black : colors.white) : colors.text }
             ]}>
-              Screenshot
+              Image
             </Text>
           </TouchableOpacity>
 
@@ -100,7 +103,7 @@ export function InputSection({ onSubmit, loading }: InputSectionProps) {
               styles.inputModeButtonText,
               { color: mode === 'text' ? (colors.primary === colors.white ? colors.black : colors.white) : colors.text }
             ]}>
-              Paste text
+              Text
             </Text>
           </TouchableOpacity>
         </View>
@@ -120,24 +123,15 @@ export function InputSection({ onSubmit, loading }: InputSectionProps) {
             textAlignVertical="top"
           />
           <View style={styles.submitButtonContainer}>
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                { 
-                  backgroundColor: isValid && !loading ? colors.primary : colors.background,
-                  borderColor: isValid && !loading ? colors.primary : colors.border,
-                }
-              ]}
+            <Button
+              variant={isValid && !loading ? "primary" : "secondary"}
+              size="medium"
+              icon="arrow-up"
               onPress={handleSubmit}
               disabled={!isValid || loading}
-              activeOpacity={0.7}
-            >
-              <Ionicons 
-                name="arrow-up" 
-                size={20} 
-                color={isValid && !loading ? (colors.primary === colors.white ? colors.black : colors.white) : colors.textSecondary} 
-              />
-            </TouchableOpacity>
+              loading={loading}
+              style={styles.submitButton}
+            />
           </View>
         </View>
       ) : (
@@ -149,21 +143,16 @@ export function InputSection({ onSubmit, loading }: InputSectionProps) {
                 onRemove={() => setSelectedImage(null)}
                 onReplace={handleImagePick}
               />
-              <TouchableOpacity
-                style={[
-                  styles.analyzeImageButton,
-                  { 
-                    backgroundColor: !loading ? colors.primary : colors.background,
-                  }
-                ]}
+              <Button
+                variant="primary"
+                size="medium"
+                title={loading ? 'Analyzing...' : 'Analyze Screenshot'}
                 onPress={handleSubmit}
                 disabled={loading}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.analyzeImageButtonText}>
-                  {loading ? 'Analyzing...' : 'Analyze Screenshot'}
-                </Text>
-              </TouchableOpacity>
+                loading={loading}
+                fullWidth
+                style={styles.analyzeImageButton}
+              />
             </>
           ) : (
             <TouchableOpacity
@@ -191,9 +180,10 @@ function createStyles(colors: any) {
   inputSectionContainer: {
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     marginHorizontal: 0,
-    minHeight: 200,
+    height: 245, // Fixed height increased by 85px for bottom spacing
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
@@ -231,7 +221,7 @@ function createStyles(colors: any) {
   },
   textInputWrapper: {
     position: 'relative',
-    minHeight: 140,
+    height: 135, // Fixed height increased by 35px
     justifyContent: 'center',
   },
   textInputField: {
@@ -241,8 +231,8 @@ function createStyles(colors: any) {
     paddingRight: 56,
     paddingLeft: 4,
     paddingVertical: 8,
-    minHeight: 100,
-    maxHeight: 200,
+    minHeight: 135,
+    maxHeight: 235,
     textAlignVertical: 'top',
   },
   submitButtonContainer: {
@@ -256,23 +246,19 @@ function createStyles(colors: any) {
   submitButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
   },
   imageUploadArea: {
-    minHeight: 140,
+    height: 135, // Fixed height increased by 35px
     justifyContent: 'center',
   },
   imageDropZone: {
-    minHeight: 120,
+    height: 115, // Fixed height increased by 35px
     borderWidth: 2,
     borderStyle: 'dashed',
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 10, // Reduced padding to fit within fixed height
   },
   imageDropZoneTitle: {
     fontSize: 14,
@@ -285,18 +271,7 @@ function createStyles(colors: any) {
     opacity: 0.7,
   },
   analyzeImageButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 22,
-    alignItems: 'center',
     marginTop: 8,
-    height: 44,
-    minHeight: 44,
-  },
-  analyzeImageButtonText: {
-    color: colors.primary === colors.white ? colors.black : colors.white,
-    fontSize: 15,
-    fontWeight: '600',
   },
   });
 }

@@ -7,9 +7,10 @@ import { Card } from './Card';
 interface AnalysisResultsProps {
   result: AnalysisResult;
   contentOpacity: Animated.Value;
+  onTechniquePress?: (technique: any, result: AnalysisResult) => void;
 }
 
-export function AnalysisResults({ result, contentOpacity }: AnalysisResultsProps) {
+export function AnalysisResults({ result, contentOpacity, onTechniquePress }: AnalysisResultsProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
 
@@ -67,7 +68,11 @@ export function AnalysisResults({ result, contentOpacity }: AnalysisResultsProps
       {result.techniques && result.techniques.length > 0 && (
         <Card variant="techniques" title={`${getLocalizedString('techniques_detected', result.language || 'en')} (${result.techniques.length})`}>
           {result.techniques.map((technique, index) => (
-            <Pressable key={index} style={[styles.techniqueItem, { backgroundColor: colors.surface }]}>
+            <Pressable 
+              key={index} 
+              style={[styles.techniqueItem, { backgroundColor: colors.surface }]}
+              onPress={() => onTechniquePress?.(technique, result)}
+            >
               <View style={styles.techniqueHeader}>
                 <Text style={[styles.techniqueName, { color: colors.text }]}>{technique.name}</Text>
                 <View style={[

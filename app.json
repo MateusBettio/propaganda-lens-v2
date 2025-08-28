@@ -25,6 +25,7 @@
         "backgroundColor": "#1a1a1a"
       },
       "package": "com.propagandalens.app",
+      "softwareKeyboardLayoutMode": "resize",
       "intentFilters": [
         {
           "action": "SEND",
