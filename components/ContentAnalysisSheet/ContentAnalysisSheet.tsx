@@ -1,10 +1,16 @@
-import React, { useRef, useCallback, useMemo, useEffect, useState } from 'react';
+import React, { useRef, useCallback, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import BottomSheet, {
   BottomSheetScrollView,
+  useBottomSheetDynamicSnapPoints,
 } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { 
+  useAnimatedStyle, 
+  interpolate,
+  useSharedValue 
+} from 'react-native-reanimated';
 import { CustomBackdrop } from './CustomBackdrop';
 import { Header } from './Header';
 import { AnalysisBodyPlaceholder } from './AnalysisBodyPlaceholder';
@@ -39,24 +45,28 @@ export const ContentAnalysisSheet: React.FC<ContentAnalysisSheetProps> = React.m
   const insets = useSafeAreaInsets();
   
   const initialSnapPoints = useMemo(() => snapPoints || ['75%', '90%'], [snapPoints]);
-  const [bottomSectionVisible, setBottomSectionVisible] = useState(true);
-
-  // Sheet starts at index 0 directly, no manual snapping needed
+  const animatedIndex = useSharedValue(0);
 
   const handleSheetChanges = useCallback((index: number) => {
+    animatedIndex.value = index;
     if (index === -1) {
-      // Hide bottom section immediately when sheet starts closing
-      setBottomSectionVisible(false);
       onClose();
-    } else {
-      // Show bottom section when sheet is visible
-      setBottomSectionVisible(true);
     }
-  }, [onClose]);
+  }, [onClose, animatedIndex]);
 
-  useEffect(() => {
-    setBottomSectionVisible(open);
-  }, [open]);
+  // Animate bottom section with the modal position
+  const bottomSectionAnimatedStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(
+      animatedIndex.value,
+      [-1, 0], // From closed to first snap point
+      [100, 0], // Slide down when closed, normal position when open
+      'clamp'
+    );
+    
+    return {
+      transform: [{ translateY }],
+    };
+  });
 
   const renderBackdrop = useCallback(
     (props: any) => (
@@ -85,6 +95,8 @@ export const ContentAnalysisSheet: React.FC<ContentAnalysisSheetProps> = React.m
         animateOnMount
         backgroundStyle={styles.sheetBackground}
         handleIndicatorStyle={styles.handleIndicator}
+        activeOffsetY={[-5, 5]}
+        failOffsetX={[-10, 10]}
       >
           <View style={{ flex: 1, paddingBottom: 80 }}>
             <Header
@@ -203,7 +215,7 @@ export const ContentAnalysisSheet: React.FC<ContentAnalysisSheetProps> = React.m
         <BottomSection
           placeholder={inputPlaceholder}
           onSubmit={onSubmitInput}
-          isVisible={bottomSectionVisible}
+          animatedStyle={bottomSectionAnimatedStyle}
         />
     </GestureHandlerRootView>
   );
@@ -211,9 +223,9 @@ export const ContentAnalysisSheet: React.FC<ContentAnalysisSheetProps> = React.m
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
   handleIndicator: {
     backgroundColor: '#E5E7EB',
@@ -222,7 +234,7 @@ const styles = StyleSheet.create({
   },
   tabContentContainer: {
     flexGrow: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 8,
     paddingVertical: 16,
     paddingBottom: 100,
   },

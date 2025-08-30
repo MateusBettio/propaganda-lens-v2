@@ -1,48 +1,36 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
+import { SvgXml } from 'react-native-svg';
 import { Variant, VARIANT_CONFIGS } from './types';
+import { likelyDeceptiveSvg, likelySafeSvg, analysisErrorSvg } from './AnalysisIcons';
 
 interface HeaderProps {
   variant: Variant;
   confidence?: number;
 }
 
-const ProgressGauge: React.FC<{ confidence: number; color: string }> = ({ confidence, color }) => {
-  const size = 80;
-  const strokeWidth = 6;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * Math.PI;
-  const strokeDashoffset = circumference - (confidence * circumference);
+const AnalysisIcon: React.FC<{ variant: Variant }> = ({ variant }) => {
+  const getIconSvg = () => {
+    switch (variant) {
+      case 'deceptive':
+        return likelyDeceptiveSvg;
+      case 'safe':
+        return likelySafeSvg;
+      case 'error':
+      case 'loading':
+        return analysisErrorSvg;
+      case 'satire':
+        return likelySafeSvg; // Use safe icon for satire
+      default:
+        return analysisErrorSvg;
+    }
+  };
 
+  const svgString = getIconSvg();
+  
   return (
-    <View style={styles.gaugeContainer}>
-      <Svg width={size} height={size}>
-        {/* Background arc */}
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="#F3F4F6"
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeDasharray={`${circumference} ${circumference}`}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-        {/* Progress arc */}
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={color}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${circumference} ${circumference}`}
-          strokeDashoffset={strokeDashoffset}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-      </Svg>
+    <View style={styles.iconContainer}>
+      <SvgXml xml={svgString} width={80} height={80} />
     </View>
   );
 };
@@ -89,7 +77,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
 
   return (
     <View style={styles.container}>
-      <ProgressGauge confidence={confidence} color={config.color} />
+      <AnalysisIcon variant={variant} />
       
       <Text style={styles.title}>
         {getTitle()}
@@ -108,7 +96,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     paddingHorizontal: 24,
   },
-  gaugeContainer: {
+  iconContainer: {
     marginBottom: 20,
   },
   title: {

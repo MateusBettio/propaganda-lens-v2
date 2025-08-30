@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -13,6 +13,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   interpolate,
+  useSharedValue,
 } from 'react-native-reanimated';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -36,24 +37,89 @@ export const TabsView: React.FC<TabsViewProps> = React.memo(({
   onTabChange,
 }) => {
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [tabLayouts, setTabLayouts] = useState<{ x: number; width: number }[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const tabScrollRef = useRef<ScrollView>(null);
+  const indicatorPosition = useSharedValue(initialTab);
 
   const handleTabPress = (index: number) => {
     setActiveTab(index);
+    indicatorPosition.value = withTiming(index, { duration: 300 });
     scrollViewRef.current?.scrollTo({ x: index * screenWidth, animated: true });
     onTabChange?.(index);
   };
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = event.nativeEvent.contentOffset.x;
-    const newIndex = Math.round(offsetX / screenWidth);
+    const progress = offsetX / screenWidth;
+    const newIndex = Math.round(progress);
+    
+    // Update indicator position smoothly based on scroll progress
+    indicatorPosition.value = progress;
     
     if (newIndex !== activeTab && newIndex >= 0 && newIndex < tabs.length) {
       setActiveTab(newIndex);
       onTabChange?.(newIndex);
     }
   };
+
+  useEffect(() => {
+    if (tabLayouts.length === 0 || !tabLayouts[activeTab]) return;
+    
+    const activeTabLayout = tabLayouts[activeTab];
+    const tabCenterX = activeTabLayout.x + (activeTabLayout.width / 2);
+    const screenCenterX = screenWidth / 2;
+    const scrollToX = tabCenterX - screenCenterX;
+    
+    tabScrollRef.current?.scrollTo({
+      x: Math.max(0, scrollToX),
+      animated: true
+    });
+  }, [activeTab, tabLayouts]);
+
+  const handleTabLayout = (index: number, event: any) => {
+    const { x, width } = event.nativeEvent.layout;
+    setTabLayouts(prev => {
+      const newLayouts = [...prev];
+      newLayouts[index] = { x, width };
+      return newLayouts;
+    });
+  };
+
+  const animatedIndicatorStyle = useAnimatedStyle(() => {
+    if (tabLayouts.length === 0) return { opacity: 0 };
+    
+    const progress = indicatorPosition.value;
+    const currentIndex = Math.floor(progress);
+    const nextIndex = Math.min(currentIndex + 1, tabs.length - 1);
+    const fraction = progress - currentIndex;
+    
+    const currentLayout = tabLayouts[currentIndex];
+    const nextLayout = tabLayouts[nextIndex];
+    
+    if (!currentLayout || !nextLayout) return { opacity: 0 };
+    
+    // Interpolate position and width
+    const translateX = interpolate(
+      fraction,
+      [0, 1],
+      [currentLayout.x + 16, nextLayout.x + 16], // Add padding offset
+      'clamp'
+    );
+    
+    const width = interpolate(
+      fraction,
+      [0, 1],
+      [currentLayout.width - 32, nextLayout.width - 32], // Subtract padding
+      'clamp'
+    );
+    
+    return {
+      opacity: 1,
+      width,
+      transform: [{ translateX }],
+    };
+  });
 
   // Calculate tab width - fixed width for each tab
   const TAB_WIDTH = 120;
@@ -63,23 +129,29 @@ export const TabsView: React.FC<TabsViewProps> = React.memo(({
       {/* Tab Headers */}
       <ScrollView 
         ref={tabScrollRef}
-        horizontal
+        horizontal={true}
         showsHorizontalScrollIndicator={false}
+        scrollEnabled={true}
+        bounces={true}
         style={styles.tabsContainer}
-        contentContainerStyle={styles.tabsContent}
+        contentContainerStyle={[styles.tabsContent, { minWidth: tabs.length * 108 + 32 }]}
+        nestedScrollEnabled={true}
+        keyboardShouldPersistTaps="handled"
       >
         {tabs.map((tab, index) => (
           <Pressable
             key={tab.id}
             style={[styles.tab, index === activeTab && styles.activeTab]}
             onPress={() => handleTabPress(index)}
+            onLayout={(event) => handleTabLayout(index, event)}
           >
             <Text style={[styles.tabText, index === activeTab && styles.activeTabText]}>
               {tab.label}
             </Text>
-            {index === activeTab && <View style={styles.tabIndicator} />}
           </Pressable>
         ))}
+        {/* Single Animated Indicator */}
+        <Animated.View style={[styles.slidingIndicator, animatedIndicatorStyle]} />
       </ScrollView>
 
       {/* Tab Content */}
@@ -110,20 +182,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
     maxHeight: 56,
+    overflow: 'visible',
   },
   tabsContent: {
     flexDirection: 'row',
-    paddingHorizontal: 0,
+    paddingHorizontal: 16,
     alignItems: 'center',
   },
   tab: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 56,
     position: 'relative',
-    minWidth: 120,
+    minWidth: 100,
+    marginHorizontal: 4,
   },
   activeTab: {
     // Active tab styles handled by text color and indicator
@@ -141,8 +215,15 @@ const styles = StyleSheet.create({
   tabIndicator: {
     position: 'absolute',
     bottom: 0,
-    left: 24,
-    right: 24,
+    left: 16,
+    right: 16,
+    height: 2,
+    backgroundColor: '#000000',
+  },
+  slidingIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
     height: 2,
     backgroundColor: '#000000',
   },

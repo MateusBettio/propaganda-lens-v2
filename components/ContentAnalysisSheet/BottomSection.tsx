@@ -1,31 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Pressable, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { 
-  useAnimatedStyle, 
-  withTiming, 
-  useSharedValue 
-} from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 interface BottomSectionProps {
   placeholder?: string;
   onSubmit?: (value: string) => void;
-  isVisible?: boolean;
+  animatedStyle?: any;
 }
 
 export const BottomSection: React.FC<BottomSectionProps> = React.memo(({
   placeholder = "Ask about the content...",
   onSubmit,
-  isVisible = true,
+  animatedStyle,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const insets = useSafeAreaInsets();
-  const translateY = useSharedValue(0);
-
-  useEffect(() => {
-    translateY.value = withTiming(isVisible ? 0 : 100, { duration: 250 });
-  }, [isVisible]);
 
   const handleSubmit = () => {
     if (inputValue.trim() && onSubmit) {
@@ -33,12 +24,6 @@ export const BottomSection: React.FC<BottomSectionProps> = React.memo(({
       setInputValue('');
     }
   };
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateY: translateY.value }],
-    };
-  });
 
   return (
     <Animated.View style={[styles.container, { paddingBottom: insets.bottom + 16 }, animatedStyle]}>
