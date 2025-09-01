@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, Pressable, TextInput, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Pressable, TextInput, Platform, Keyboard, KeyboardEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
@@ -16,6 +16,7 @@ export const BottomSection: React.FC<BottomSectionProps> = React.memo(({
   animatedStyle,
 }) => {
   const [inputValue, setInputValue] = useState('');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const insets = useSafeAreaInsets();
 
   const handleSubmit = () => {
@@ -25,8 +26,39 @@ export const BottomSection: React.FC<BottomSectionProps> = React.memo(({
     }
   };
 
+  useEffect(() => {
+    const keyboardWillShow = (event: KeyboardEvent) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    };
+
+    const keyboardWillHide = () => {
+      setKeyboardHeight(0);
+    };
+
+    const showSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      keyboardWillShow
+    );
+    const hideSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      keyboardWillHide
+    );
+
+    return () => {
+      showSubscription?.remove();
+      hideSubscription?.remove();
+    };
+  }, []);
+
   return (
-    <Animated.View style={[styles.container, { paddingBottom: insets.bottom + 16 }, animatedStyle]}>
+    <Animated.View style={[
+      styles.container, 
+      { 
+        paddingBottom: keyboardHeight > 0 ? 20 : insets.bottom + 16,
+        bottom: keyboardHeight > 0 ? keyboardHeight : 0,
+      }, 
+      animatedStyle
+    ]}>
       <Animated.View style={styles.inputContainer}>
         <TextInput
           style={styles.input}

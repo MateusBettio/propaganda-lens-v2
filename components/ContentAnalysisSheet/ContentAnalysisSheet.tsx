@@ -6,16 +6,11 @@ import BottomSheet, {
 } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { 
-  useAnimatedStyle, 
-  interpolate,
-  useSharedValue 
-} from 'react-native-reanimated';
 import { CustomBackdrop } from './CustomBackdrop';
 import { Header } from './Header';
 import { AnalysisBodyPlaceholder } from './AnalysisBodyPlaceholder';
-import { BottomSection } from './BottomSection';
 import { TabsView } from './TabsView';
+import { BottomSection } from './BottomSection';
 import type { ContentAnalysisSheetProps } from './types';
 
 export const ContentAnalysisSheet: React.FC<ContentAnalysisSheetProps> = React.memo(({
@@ -45,28 +40,14 @@ export const ContentAnalysisSheet: React.FC<ContentAnalysisSheetProps> = React.m
   const insets = useSafeAreaInsets();
   
   const initialSnapPoints = useMemo(() => snapPoints || ['75%', '90%'], [snapPoints]);
-  const animatedIndex = useSharedValue(0);
 
   const handleSheetChanges = useCallback((index: number) => {
-    animatedIndex.value = index;
     if (index === -1) {
       onClose();
     }
-  }, [onClose, animatedIndex]);
+  }, [onClose]);
 
-  // Animate bottom section with the modal position
-  const bottomSectionAnimatedStyle = useAnimatedStyle(() => {
-    const translateY = interpolate(
-      animatedIndex.value,
-      [-1, 0], // From closed to first snap point
-      [100, 0], // Slide down when closed, normal position when open
-      'clamp'
-    );
-    
-    return {
-      transform: [{ translateY }],
-    };
-  });
+
 
   const renderBackdrop = useCallback(
     (props: any) => (
@@ -78,6 +59,7 @@ export const ContentAnalysisSheet: React.FC<ContentAnalysisSheetProps> = React.m
     ),
     [enableBackdropPressToClose, onClose]
   );
+
 
   if (!open) {
     return null;
@@ -212,11 +194,12 @@ export const ContentAnalysisSheet: React.FC<ContentAnalysisSheetProps> = React.m
           </View>
         </BottomSheet>
         
-        <BottomSection
-          placeholder={inputPlaceholder}
-          onSubmit={onSubmitInput}
-          animatedStyle={bottomSectionAnimatedStyle}
-        />
+        {open && (
+          <BottomSection
+            placeholder={inputPlaceholder}
+            onSubmit={onSubmitInput}
+          />
+        )}
     </GestureHandlerRootView>
   );
 });
@@ -228,7 +211,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
   },
   handleIndicator: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
     width: 40,
     height: 4,
   },

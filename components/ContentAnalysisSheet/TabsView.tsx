@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
     maxHeight: 56,
     overflow: 'visible',
   },
