@@ -4,6 +4,25 @@ import * as Linking from 'expo-linking';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from '../contexts/theme-context';
 import { Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useFonts } from 'expo-font';
+import { 
+  InstrumentSans_400Regular,
+  InstrumentSans_500Medium,
+  InstrumentSans_600SemiBold,
+  InstrumentSans_700Bold,
+  InstrumentSans_400Regular_Italic,
+  InstrumentSans_500Medium_Italic,
+  InstrumentSans_600SemiBold_Italic,
+  InstrumentSans_700Bold_Italic
+} from '@expo-google-fonts/instrument-sans';
+import {
+  InstrumentSerif_400Regular,
+  InstrumentSerif_400Regular_Italic
+} from '@expo-google-fonts/instrument-serif';
+import * as SplashScreen from 'expo-splash-screen';
+
+SplashScreen.preventAutoHideAsync();
 
 function AppStack() {
   const { colors } = useTheme();
@@ -35,6 +54,25 @@ function AppStack() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    InstrumentSans_400Regular,
+    InstrumentSans_500Medium,
+    InstrumentSans_600SemiBold,
+    InstrumentSans_700Bold,
+    InstrumentSans_400Regular_Italic,
+    InstrumentSans_500Medium_Italic,
+    InstrumentSans_600SemiBold_Italic,
+    InstrumentSans_700Bold_Italic,
+    InstrumentSerif_400Regular,
+    InstrumentSerif_400Regular_Italic
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
   useEffect(() => {
     // Fix viewport for web platform
     if (Platform.OS === 'web') {
@@ -77,11 +115,17 @@ export default function RootLayout() {
     }
   }, []);
 
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <AppStack />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AppStack />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

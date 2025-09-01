@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../contexts/theme-context';
+import { fonts } from '../constants/fonts';
 
 interface UsageCounterProps {
   remainingChecks: number;
@@ -66,7 +67,7 @@ function createStyles(colors: any) {
     },
     freeAnalysisLabel: {
       fontSize: 11,
-      fontWeight: '500',
+      fontFamily: fonts.medium,
       lineHeight: 13,
       textAlign: 'center',
     },
@@ -93,7 +94,7 @@ function createStyles(colors: any) {
     },
     counterNumber: {
       fontSize: 14,
-      fontWeight: '700',
+      fontFamily: fonts.bold,
       textAlign: 'center',
       zIndex: 1,
     },

@@ -11,24 +11,18 @@ import { AnalysisSkeleton } from '../components/AnalysisSkeleton';
 import { AnalysisResults } from '../components/analysis-results';
 import { Carousel } from '../components/Carousel';
 import CounterRing from '../components/CounterRing/CounterRing';
-import { ContentAnalysisSheet, useContentAnalysisSheet, Variant } from '../components/ContentAnalysisSheet';
+import { ContentAnalysisSheetV2 } from '../components/ContentAnalysisSheet/ContentAnalysisSheetV2';
 
 export default function HomeScreen() {
   const [validationError, setValidationError] = useState<string>('');
   const { loading, error, result, analyze, clearError } = useAnalysis();
   const { colors, toggleTheme } = useTheme();
   const counterRef = useRef<any>(null);
-  // ContentAnalysisSheet state management
-  const { sheetProps, open: openSheet, setVariant, setContent } = useContentAnalysisSheet({
-    detailType: 'image',
-    source: 'inApp',
-    inputPlaceholder: 'Enter URL or text to analyze...',
-    submitLabel: 'Analyze',
-    onSubmitInput: async (value: string) => {
-      console.log('Analyzing from sheet:', value);
-      await handleSubmit(value);
-    },
-  });
+  // ContentAnalysisSheetV2 state management
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [sheetContent, setSheetContent] = useState<string>('');
+  const [sheetAnalysis, setSheetAnalysis] = useState<any>(null);
+  const [sheetLoading, setSheetLoading] = useState(false);
 
   // Force clear old persistence keys on mount
   useEffect(() => {
@@ -155,60 +149,20 @@ export default function HomeScreen() {
 
   // Handle carousel item click
   const handleCarouselItemClick = useCallback((item: any) => {
-    // Map the item to appropriate variant based on description
-    let variant: Variant = 'safe';
-    if (item.description.toLowerCase().includes('propaganda') || item.description.toLowerCase().includes('manipulation')) {
-      variant = 'deceptive';
-    } else if (item.description.toLowerCase().includes('satire')) {
-      variant = 'satire';
-    }
-    
-    // Set content and open sheet with mock analysis data for testing
-    setContent({
-      title: item.title,
-      description: item.description,
-      imageUri: item.image,
-      confidence: 0.75 + Math.random() * 0.25,
-      // Mock analysis data for testing
-      techniques: [
-        {
-          name: 'Emotional Manipulation',
-          description: 'Uses fear, anger, or other strong emotions to influence judgment',
-          confidence: 'high' as const,
-          example: 'The headline uses inflammatory language to provoke outrage'
-        },
-        {
-          name: 'Cherry Picking',
-          description: 'Selectively presenting facts that support a specific narrative',
-          confidence: 'medium' as const,
-          example: 'Only negative statistics are shown while positive ones are omitted'
-        },
-        {
-          name: 'False Dichotomy',
-          description: 'Presenting only two options when more exist',
-          confidence: 'low' as const,
-          example: 'You\'re either with us or against us'
-        }
-      ],
-      quickAssessment: 'This content appears to use several propaganda techniques to influence reader perception. The primary concern is the use of emotional language and selective fact presentation.',
-      counterPerspective: 'Consider looking for additional sources that present different viewpoints. Check if the claims made are supported by credible evidence and whether important context might be missing.',
-      reflectionQuestions: [
-        'What emotions does this content trigger in you?',
-        'Are there facts or perspectives that might be missing?',
-        'Who benefits from you believing this narrative?',
-        'Have you verified these claims with other sources?'
-      ]
-    });
-    setVariant(variant);
-    openSheet();
-  }, [setContent, setVariant, openSheet]);
+    console.log('Carousel item clicked:', item.title);
+    // Set content and open sheet with empty analysis
+    setSheetContent(item.description);
+    setSheetAnalysis(null);
+    setSheetVisible(true);
+    console.log('Sheet should be visible now:', true);
+  }, []);
 
   return (
     <View style={[styles.homeScreenContainer, { backgroundColor: colors.background }]}>
       {/* App Header with Logo */}
       <View style={styles.appHeader}>
         <View style={styles.logoContainer}>
-          <Logo width={250} onPress={toggleTheme} />
+          <Logo width={185} onPress={toggleTheme} />
         </View>
         <View style={styles.counterContainer}>
           <CounterRing 
@@ -279,18 +233,18 @@ export default function HomeScreen() {
                 });
                 
                 // Open the modal with full analysis data
-                setContent({
-                  title: 'Analysis Details',
-                  description: fullResult.quickAssessment || 'Detailed analysis of detected propaganda techniques',
+                setSheetContent(lastAnalyzedContentRef.current);
+                setSheetAnalysis({
                   confidence: fullResult.confidence || fullResult.manipulationScore,
-                  techniques: fullResult.techniques,
-                  quickAssessment: fullResult.quickAssessment,
-                  counterPerspective: fullResult.counterPerspective,
-                  reflectionQuestions: fullResult.reflectionQuestions,
+                  summary: fullResult.quickAssessment || 'Detailed analysis of detected propaganda techniques',
+                  techniques: fullResult.techniques?.map((t: any) => ({
+                    name: t.name,
+                    description: t.description,
+                    severity: t.confidence === 'high' ? 'high' : t.confidence === 'medium' ? 'medium' : 'low',
+                    examples: t.example ? [t.example] : []
+                  }))
                 });
-                setVariant(fullResult.manipulationScore > 0.7 ? 'deceptive' : 
-                          fullResult.manipulationScore > 0.4 ? 'satire' : 'safe');
-                openSheet();
+                setSheetVisible(true);
               }}
             />
           </Animated.View>
@@ -314,11 +268,20 @@ export default function HomeScreen() {
         <InputSection 
           onSubmit={handleSubmit}
           loading={loading}
+          disabled={sheetVisible}
         />
       </View>
       
-      {/* Inline Modal with Blur - Renders over content */}
-      <ContentAnalysisSheet {...sheetProps} />
+      {/* Analysis Sheet V2 */}
+      {sheetVisible && (
+        <ContentAnalysisSheetV2 
+          content={sheetContent}
+          analysis={sheetAnalysis}
+          isLoading={sheetLoading}
+          isVisible={sheetVisible}
+          onClose={() => setSheetVisible(false)}
+        />
+      )}
     </View>
   );
 }

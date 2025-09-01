@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { useTheme } from '../contexts/theme-context';
 import { ColorScheme } from '../types';
+import { fonts } from '../constants/fonts';
 
 interface CardProps {
   variant?: 'default' | 'header' | 'techniques' | 'assessment';
@@ -44,7 +45,7 @@ function createStyles(colors: ColorScheme) {
     },
     title: {
       fontSize: 18,
-      fontWeight: '600',
+      fontFamily: fonts.semiBold,
       color: colors.text,
       marginBottom: 16,
     },

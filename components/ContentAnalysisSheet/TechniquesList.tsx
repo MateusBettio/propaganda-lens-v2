@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../constants/fonts';
 
 interface TechniquesListProps {
   onTechniquePress?: (technique: TechniqueItem) => void;
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
     color: '#111827',
     marginBottom: 2,
   },

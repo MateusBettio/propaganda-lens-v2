@@ -48,6 +48,7 @@ import {
 } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { useCreditsCounter } from './useCreditsCounter';
+import { fonts } from '../../constants/fonts';
 
 export type CounterRingProps = {
   /** Left label, e.g., "Free Analysis" */
@@ -339,7 +340,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
     lineHeight: 13,
     textAlign: 'center',
     marginRight: 12,
@@ -356,7 +357,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   number: {
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
     textAlign: 'center',
     ...(Platform.OS === 'web' && {
       letterSpacing: -0.5,

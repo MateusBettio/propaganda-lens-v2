@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/theme-context';
 import { ColorScheme } from '../types';
+import { fonts } from '../constants/fonts';
 
 interface ErrorMessageProps {
   title?: string;
@@ -75,7 +76,7 @@ function createStyles(colors: ColorScheme, variant: 'error' | 'warning' | 'info'
     },
     title: {
       fontSize: 16,
-      fontWeight: '600',
+      fontFamily: fonts.semiBold,
       color: borderColor,
       marginBottom: 8,
     },

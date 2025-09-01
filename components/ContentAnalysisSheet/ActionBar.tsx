@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../constants/fonts';
 
 interface ActionBarProps {
   onCleanse?: () => void;
@@ -99,7 +100,7 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
     color: '#6B7280',
     textAlign: 'center',
   },

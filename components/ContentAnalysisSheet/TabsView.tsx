@@ -15,6 +15,7 @@ import Animated, {
   interpolate,
   useSharedValue,
 } from 'react-native-reanimated';
+import { fonts } from '../../constants/fonts';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -204,13 +205,13 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
     color: '#6B7280',
     textAlign: 'center',
   },
   activeTabText: {
     color: '#111827',
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   tabIndicator: {
     position: 'absolute',

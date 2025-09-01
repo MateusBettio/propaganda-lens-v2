@@ -14,7 +14,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.propagandalens.app",
-      "associatedDomains": ["applinks:propaganda-lens.app"],
+      "associatedDomains": [
+        "applinks:propaganda-lens.app"
+      ],
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to camera to analyze images."
       }
@@ -29,12 +31,16 @@
       "intentFilters": [
         {
           "action": "SEND",
-          "category": ["DEFAULT"],
+          "category": [
+            "DEFAULT"
+          ],
           "type": "text/plain"
         },
         {
           "action": "SEND",
-          "category": ["DEFAULT"],
+          "category": [
+            "DEFAULT"
+          ],
           "type": "text/*"
         }
       ]
@@ -44,7 +50,9 @@
       "bundler": "metro",
       "template": "./web/index.html"
     },
-    "plugins": [],
+    "plugins": [
+      "expo-font"
+    ],
     "scheme": "propaganda-lens",
     "platforms": [
       "ios",

@@ -1,6 +1,7 @@
 import { View, Image, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/theme-context';
+import { fonts } from '../constants/fonts';
 
 interface ImagePreviewProps {
   imageUri: string;
@@ -61,7 +62,7 @@ function createStyles(colors: any) {
   },
   fileName: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
     marginBottom: 2,
   },
   hint: {

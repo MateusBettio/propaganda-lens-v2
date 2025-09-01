@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../contexts/theme-context';
+import { fonts } from '../constants/fonts';
 
 export function ThemeSwitcher() {
   const { theme, toggleTheme, colors } = useTheme();
@@ -31,6 +32,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
 });

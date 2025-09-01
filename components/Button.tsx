@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/theme-context';
 import { ColorScheme } from '../types';
+import { fonts } from '../constants/fonts';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -380,7 +381,7 @@ function createStyles(colors: ColorScheme) {
       gap: 8,
     },
     text: {
-      fontWeight: '600',
+      fontFamily: fonts.semiBold,
       textAlign: 'center',
     },
     

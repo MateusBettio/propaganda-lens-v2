@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/theme-context';
+import { fonts } from '../constants/fonts';
 
 export type InputMode = 'screenshot' | 'text';
 
@@ -121,7 +122,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
   },
   uploadButton: {
     marginLeft: 12,

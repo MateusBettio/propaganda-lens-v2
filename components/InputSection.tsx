@@ -7,15 +7,17 @@ import { Button } from './Button';
 import { ImagePreview } from './ImagePreview';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
+import { fonts } from '../constants/fonts';
 
 export type InputMode = 'text' | 'screenshot';
 
 interface InputSectionProps {
   onSubmit: (content: string, image?: string) => void;
   loading?: boolean;
+  disabled?: boolean;
 }
 
-export function InputSection({ onSubmit, loading }: InputSectionProps) {
+export function InputSection({ onSubmit, loading, disabled = false }: InputSectionProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(colors);
@@ -67,10 +69,12 @@ export function InputSection({ onSubmit, loading }: InputSectionProps) {
             style={[
               styles.inputModeButton,
               mode === 'screenshot' && styles.inputModeButtonActive,
-              { backgroundColor: mode === 'screenshot' ? colors.primary : colors.background }
+              { backgroundColor: mode === 'screenshot' ? colors.primary : colors.background },
+              disabled && { opacity: 0.5 }
             ]}
             onPress={() => handleModeChange('screenshot')}
             activeOpacity={0.7}
+            disabled={disabled}
           >
             <Ionicons 
               name="camera-outline" 
@@ -89,10 +93,12 @@ export function InputSection({ onSubmit, loading }: InputSectionProps) {
             style={[
               styles.inputModeButton,
               mode === 'text' && styles.inputModeButtonActive,
-              { backgroundColor: mode === 'text' ? colors.primary : colors.background }
+              { backgroundColor: mode === 'text' ? colors.primary : colors.background },
+              disabled && { opacity: 0.5 }
             ]}
             onPress={() => handleModeChange('text')}
             activeOpacity={0.7}
+            disabled={disabled}
           >
             <Ionicons 
               name="document-text-outline" 
@@ -113,7 +119,7 @@ export function InputSection({ onSubmit, loading }: InputSectionProps) {
       {mode === 'text' ? (
         <View style={styles.textInputWrapper}>
           <TextInput
-            style={[styles.textInputField, { color: colors.text }]}
+            style={[styles.textInputField, { color: colors.text }, disabled && { opacity: 0.5 }]}
             value={textContent}
             onChangeText={setTextContent}
             placeholder="Paste text or URL for instant analysis..."
@@ -121,6 +127,7 @@ export function InputSection({ onSubmit, loading }: InputSectionProps) {
             multiline={true}
             numberOfLines={4}
             textAlignVertical="top"
+            editable={!disabled}
           />
           <View style={styles.submitButtonContainer}>
             <Button
@@ -217,7 +224,7 @@ function createStyles(colors: any) {
   },
   inputModeButtonText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
   },
   textInputWrapper: {
     position: 'relative',
@@ -263,7 +270,7 @@ function createStyles(colors: any) {
   imageDropZoneTitle: {
     fontSize: 14,
     marginTop: 8,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
   },
   imageDropZoneHint: {
     fontSize: 12,

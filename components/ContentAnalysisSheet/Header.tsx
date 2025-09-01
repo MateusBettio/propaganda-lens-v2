@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { Variant, VARIANT_CONFIGS } from './types';
 import { likelyDeceptiveSvg, likelySafeSvg, analysisErrorSvg } from './AnalysisIcons';
+import { fonts } from '../../constants/fonts';
 
 interface HeaderProps {
   variant: Variant;
@@ -101,7 +102,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
     color: '#111827',
     marginBottom: 8,
     textAlign: 'center',

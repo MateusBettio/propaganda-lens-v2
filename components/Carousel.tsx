@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Image, Dimensions } from 'react-native';
 import { useTheme } from '../contexts/theme-context';
 import { Button } from './Button';
+import { fonts } from '../constants/fonts';
 
 const { width: screenWidth } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth * 0.8;
@@ -22,9 +23,9 @@ interface CarouselProps {
 const placeholderItems: CarouselItem[] = [
   {
     id: '1',
-    image: 'https://picsum.photos/400/225?random=1',
-    title: 'Political Speech Analysis',
-    description: 'Detected 5 propaganda techniques including emotional manipulation and loaded language in recent political speech about economic policy',
+    image: 'https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?ixlib=rb-4.0.3&w=400&h=225&fit=crop',
+    title: 'COVID-19 Misinformation',
+    description: 'Detected multiple propaganda techniques including fear appeals and false authority in social media posts spreading COVID-19 conspiracy theories',
     timestamp: '2 hours ago',
   },
   {
@@ -58,7 +59,7 @@ export function Carousel({ onItemPress }: CarouselProps) {
   return (
     <View style={styles.container}>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>
-        Trending Analysis
+        Trending this week
       </Text>
       
       <ScrollView
@@ -107,8 +108,8 @@ function createStyles(colors: any) {
     marginVertical: 24,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 32,
+    fontFamily: fonts.serifRegular,
     marginBottom: 16,
     paddingHorizontal: 16,
   },
@@ -137,7 +138,7 @@ function createStyles(colors: any) {
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
     marginBottom: 8,
   },
   description: {

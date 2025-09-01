@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 import { AnalysisResult } from '../types';
 import { useTheme } from '../contexts/theme-context';
 import { Card } from './Card';
+import { fonts } from '../constants/fonts';
 
 interface AnalysisResultsProps {
   result: AnalysisResult;
@@ -146,7 +147,7 @@ function createStyles(colors: any) {
     },
     techniqueName: {
       fontSize: 16,
-      fontWeight: '600',
+      fontFamily: fonts.semiBold,
       flex: 1,
     },
     techniqueDescription: {
@@ -177,7 +178,7 @@ function createStyles(colors: any) {
     confidenceText: {
       color: 'white',
       fontSize: 12,
-      fontWeight: '600',
+      fontFamily: fonts.semiBold,
       textTransform: 'uppercase',
     },
     question: {
