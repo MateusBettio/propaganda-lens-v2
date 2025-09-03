@@ -30,16 +30,16 @@ const placeholderItems: CarouselItem[] = [
   },
   {
     id: '2', 
-    image: 'https://picsum.photos/400/225?random=2',
-    title: 'News Article Review',
-    description: 'Identified emotional manipulation and loaded language in viral news article about climate change',
+    image: 'https://images.unsplash.com/photo-1526554850534-7c78330d5f90?ixlib=rb-4.0.3&w=400&h=225&fit=crop',
+    title: 'Hamas-Israel War',
+    description: 'Detected propaganda techniques including emotional manipulation and selective framing in social media posts about the conflict',
     timestamp: '5 hours ago',
   },
   {
     id: '3',
-    image: 'https://picsum.photos/400/225?random=3',
-    title: 'Satire Detection',
-    description: 'Content identified as satire - found exaggeration and irony techniques in trending social media post',
+    image: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?ixlib=rb-4.0.3&w=400&h=225&fit=crop',
+    title: 'Anti-Gun Propaganda',
+    description: 'Identified fear appeals and loaded language in media coverage following mass shooting incident',
     timestamp: '1 day ago',
   },
 ];

@@ -151,7 +151,7 @@ export default function HomeScreen() {
   const handleCarouselItemClick = useCallback((item: any) => {
     console.log('Carousel item clicked:', item.title);
     // Set content and open sheet with empty analysis
-    setSheetContent(item.description);
+    setSheetContent(item.title); // Changed from item.description to item.title
     setSheetAnalysis(null);
     setSheetVisible(true);
     console.log('Sheet should be visible now:', true);

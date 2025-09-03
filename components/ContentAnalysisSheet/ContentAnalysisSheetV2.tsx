@@ -59,6 +59,9 @@ export function ContentAnalysisSheetV2({
   const [isNarrativeFlipped, setIsNarrativeFlipped] = useState(false);
   const flipAnimation = useSharedValue(0);
   
+  // Accordion state
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  
   // Scroll animation values
   const scrollY = useSharedValue(0);
   const headerHeight = 250; // Height of full header
@@ -147,6 +150,19 @@ export function ContentAnalysisSheetV2({
       console.error('Error sharing:', error);
     }
   }, [analysis]);
+  
+  // Handle accordion toggle
+  const toggleAccordionItem = useCallback((itemId: string) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  }, []);
 
   // Handle narrative flip
   const handleFlipNarrative = useCallback(() => {
@@ -303,7 +319,182 @@ export function ContentAnalysisSheetV2({
     };
   });
   
-  
+  // Create accordion data structure
+  const createAccordionData = (content: string) => {
+    if (content.includes('COVID') || content.includes('covid')) {
+      return [
+        {
+          id: 'covid-misinfo',
+          icon: require('../../assets/analysis-icons/covid-19.png'),
+          title: 'COVID-19 Misinformation',
+          description: 'Vaccine skepticism and anti-mandate rhetoric',
+          detailedContent: 'This content promotes vaccine hesitancy by questioning safety data, spreading unverified claims about side effects, and portraying public health measures as authoritarian overreach. Common tactics include cherry-picking isolated cases, misrepresenting scientific studies, and appealing to personal freedom over collective health.'
+        },
+        {
+          id: 'authority-appeal',
+          icon: require('../../assets/analysis-icons/authority.png'),
+          title: 'Appeal to Authority',
+          description: 'Using "trust the science" without evidence',
+          detailedContent: 'The content uses appeal to authority fallacies by invoking scientific credibility without providing actual evidence. Phrases like "trust the science" are used as conversation stoppers, while dissenting expert voices are dismissed or marginalized. This creates an illusion of scientific consensus where none may exist.'
+        },
+        {
+          id: 'fear-mongering',
+          icon: require('../../assets/analysis-icons/fear.png'),
+          title: 'Fear Mongering',
+          description: 'Exaggerating dangers to influence behavior',
+          detailedContent: 'Fear-based messaging amplifies worst-case scenarios to drive compliance with health measures. This includes highlighting rare adverse events, using apocalyptic language about virus variants, and creating anxiety about social consequences of non-compliance. The goal is emotional manipulation rather than rational persuasion.'
+        },
+        {
+          id: 'govt-narrative',
+          icon: require('../../assets/analysis-icons/government.png'),
+          title: 'Government Narrative',
+          description: 'Promoting official health policy positions',
+          detailedContent: 'The content aligns closely with government health policies without acknowledging potential conflicts of interest or alternative viewpoints. Official statements are presented as unquestionable truth, and policy changes are framed as "following the science" rather than political or economic decisions.'
+        },
+        {
+          id: 'pharma-influence',
+          icon: require('../../assets/analysis-icons/pharma.png'),
+          title: 'Pharmaceutical Influence',
+          description: 'Potential industry-backed messaging',
+          detailedContent: 'The messaging shows potential pharmaceutical industry influence through uncritical promotion of medical interventions, downplaying of financial incentives, and exclusion of non-pharmaceutical solutions. Industry-funded studies are presented without disclosure of conflicts of interest.'
+        }
+      ];
+    } else if (content.includes('Hamas-Israel War')) {
+      return [
+        {
+          id: 'conflict-misinfo',
+          icon: require('../../assets/analysis-icons/government.png'),
+          title: 'Conflict Misinformation',
+          description: 'False casualty numbers and fabricated incidents',
+          detailedContent: 'The content spreads unverified casualty figures, promotes debunked stories of atrocities, or presents staged incidents as authentic. This includes using old footage from other conflicts, misrepresenting civilian vs. military casualties, and amplifying unconfirmed reports without proper verification.'
+        },
+        {
+          id: 'emotional-manipulation',
+          icon: require('../../assets/analysis-icons/fear.png'),
+          title: 'Emotional Manipulation',
+          description: 'Using graphic imagery to trigger outrage',
+          detailedContent: 'The content exploits human suffering through graphic images and videos designed to provoke immediate emotional responses rather than rational analysis. This includes sharing images of injured children, destroyed buildings, or grieving families to bypass critical thinking and generate support for one side.'
+        },
+        {
+          id: 'selective-context',
+          icon: require('../../assets/analysis-icons/framing.png'),
+          title: 'Selective Context',
+          description: 'Omitting key background information',
+          detailedContent: 'The narrative deliberately excludes crucial context that would provide a more complete picture. This includes ignoring historical provocations, omitting details about military targets vs. civilian areas, or failing to mention the sequence of events leading to specific incidents.'
+        },
+        {
+          id: 'loaded-language',
+          icon: require('../../assets/analysis-icons/inflamatory.png'),
+          title: 'Loaded Language',
+          description: '"Genocide", "ethnic cleansing", "apartheid"',
+          detailedContent: 'The content employs emotionally charged terms that carry specific historical and legal meanings to describe current events. Words like "genocide" and "ethnic cleansing" are used without meeting their legal definitions, while terms like "apartheid" are applied anachronistically to inflame rather than inform.'
+        },
+        {
+          id: 'false-equivalence',
+          icon: require('../../assets/analysis-icons/authority.png'),
+          title: 'False Moral Equivalence',
+          description: 'Equating terrorist acts with self-defense',
+          detailedContent: 'The content creates false moral equivalencies between targeted attacks on civilians and military responses to those attacks. This includes portraying terrorist organizations as freedom fighters or equating defensive military actions with offensive terrorism, obscuring important distinctions in international law.'
+        }
+      ];
+    } else if (content.includes('Anti-Gun Propaganda')) {
+      return [
+        {
+          id: 'tragedy-exploitation',
+          icon: require('../../assets/analysis-icons/covid-19.png'),
+          title: 'Tragedy Exploitation',
+          description: 'Using fresh grief to push immediate legislation',
+          detailedContent: 'The content capitalizes on mass shooting tragedies by demanding immediate policy action while emotions are high and rational debate is discouraged. This includes platforming grieving families as policy advocates, using "never again" rhetoric to shut down discussion, and framing any delay in legislation as complicity in future violence.'
+        },
+        {
+          id: 'fear-mongering-guns',
+          icon: require('../../assets/analysis-icons/fear.png'),
+          title: 'Fear Mongering',
+          description: '"Your children aren\'t safe at school"',
+          detailedContent: 'The messaging amplifies parental fears by exaggerating the statistical risk of school shootings and portraying schools as war zones. This includes sensationalizing rare events, ignoring actual crime statistics, and creating anxiety that drives support for restrictive policies regardless of their effectiveness.'
+        },
+        {
+          id: 'weaponized-language',
+          icon: require('../../assets/analysis-icons/inflamatory.png'),
+          title: 'Weaponized Language',
+          description: '"Assault weapons", "weapons of war"',
+          detailedContent: 'The content uses militaristic terminology to describe civilian firearms, creating false associations with battlefield weapons. Terms like "assault weapon" are used for cosmetic features rather than function, while "weapons of war" rhetoric ignores that many civilian firearms have military origins or applications.'
+        },
+        {
+          id: 'statistical-manipulation',
+          icon: require('../../assets/analysis-icons/authority.png'),
+          title: 'Statistical Manipulation',
+          description: 'Inflated gun violence numbers and cherry-picking',
+          detailedContent: 'The content presents misleading statistics by including suicides in "gun violence" numbers, counting gang violence as mass shootings, or comparing countries with different demographics and crime patterns. Data is selectively presented to support predetermined conclusions while ignoring contradictory evidence.'
+        },
+        {
+          id: 'constitutional-gaslighting',
+          icon: require('../../assets/analysis-icons/government.png'),
+          title: 'Constitutional Gaslighting',
+          description: '"Well regulated militia" misinterpretation',
+          detailedContent: 'The content promotes outdated interpretations of the Second Amendment that have been rejected by Supreme Court precedent. This includes claiming the amendment only protects military service members, ignoring individual rights confirmed in Heller and McDonald decisions, or arguing the founders couldn\'t envision modern firearms.'
+        }
+      ];
+    } else {
+      return [
+        {
+          id: 'general-analysis',
+          icon: require('../../assets/analysis-icons/unknown.png'),
+          title: 'General Analysis',
+          description: 'Various propaganda techniques detected',
+          detailedContent: 'This content contains multiple propaganda techniques that require careful analysis. The messaging may include emotional appeals, selective presentation of facts, loaded language, or other persuasive techniques designed to influence opinion rather than inform. A more detailed analysis would require examination of specific claims and their supporting evidence.'
+        }
+      ];
+    }
+  };
+
+  // Simple Accordion Item Component (no VirtualizedList)
+  const SimpleAccordionItem = ({ 
+    item, 
+    isExpanded, 
+    onToggle 
+  }: { 
+    item: any; 
+    isExpanded: boolean; 
+    onToggle: () => void; 
+  }) => (
+    <>
+      <TouchableOpacity 
+        style={styles.detectionItem} 
+        activeOpacity={0.7}
+        onPress={onToggle}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.title}. ${isExpanded ? 'Expanded' : 'Collapsed'}. Tap to ${isExpanded ? 'collapse' : 'expand'}.`}
+        accessibilityState={{ expanded: isExpanded }}
+      >
+        <Image 
+          source={item.icon} 
+          style={styles.detectionIcon}
+        />
+        <View style={styles.detectionContent}>
+          <Text style={styles.detectionTitle}>{item.title}</Text>
+          <Text style={styles.detectionDescription}>
+            {item.description}
+          </Text>
+        </View>
+        <Ionicons 
+          name={isExpanded ? "chevron-down" : "chevron-forward"} 
+          size={20} 
+          color="rgba(0, 0, 0, 0.3)" 
+        />
+      </TouchableOpacity>
+      
+      {isExpanded && (
+        <View style={styles.accordionExpanded}>
+          <Text style={styles.accordionExpandedText}>
+            {item.detailedContent}
+          </Text>
+        </View>
+      )}
+      
+      <View style={styles.detectionDivider} />
+    </>
+  );
 
   if (!isVisible) {
     return null;
@@ -340,6 +531,10 @@ export function ContentAnalysisSheetV2({
           <Text style={styles.compactHeaderTitle}>
             {content.includes('COVID') || content.includes('covid') 
               ? 'COVID-19 Propaganda'
+              : content.includes('Hamas-Israel War')
+              ? 'Hamas-Israel War'
+              : content.includes('Anti-Gun Propaganda')
+              ? 'Anti-Gun Propaganda'
               : 'Analysis Results'
             }
           </Text>
@@ -373,6 +568,10 @@ export function ContentAnalysisSheetV2({
                   source={
                     content.includes('COVID') || content.includes('covid') 
                       ? require('../../assets/analysis-icons/covid-19.png')
+                      : content.includes('Hamas-Israel War')
+                      ? require('../../assets/analysis-icons/government.png')
+                      : content.includes('Anti-Gun Propaganda')
+                      ? require('../../assets/analysis-icons/anti-free-speech.png')
                       : require('../../assets/analysis-icons/unknown.png')
                   } 
                   style={[styles.headingIcon, iconStyle]}
@@ -380,12 +579,20 @@ export function ContentAnalysisSheetV2({
                 <Animated.Text style={[styles.headingTitle, titleStyle]}>
                   {content.includes('COVID') || content.includes('covid') 
                     ? 'COVID-19 Propaganda'
+                    : content.includes('Hamas-Israel War')
+                    ? 'Hamas-Israel War'
+                    : content.includes('Anti-Gun Propaganda')
+                    ? 'Anti-Gun Propaganda'
                     : 'Analysis Results'
                   }
                 </Animated.Text>
                 <Animated.Text style={[styles.headingDescription, descriptionStyle]}>
                   {content.includes('COVID') || content.includes('covid') 
                     ? 'Identifying misinformation and propaganda techniques\nin COVID-19 related content'
+                    : content.includes('Hamas-Israel War')
+                    ? 'Analyzing propaganda and bias in conflict-related content'
+                    : content.includes('Anti-Gun Propaganda')
+                    ? 'Detecting emotional manipulation in gun control messaging'
                     : 'Detailed propaganda analysis of the content'
                   }
                 </Animated.Text>
@@ -433,10 +640,25 @@ export function ContentAnalysisSheetV2({
                 </Text>
               </View>
               <Text style={styles.narrativeDescription}>
-                {isNarrativeFlipped 
-                  ? '"Questions remain about vaccine long-term effects and natural immunity. Critical thinking and personal choice should guide health decisions, not mandates from authorities."'
-                  : '"COVID-19 vaccines are safe and effective. Trust the science and follow public health guidelines to protect yourself and others from this dangerous virus."'
-                }
+                {(() => {
+                  if (content.includes('COVID') || content.includes('covid')) {
+                    return isNarrativeFlipped 
+                      ? '"Questions remain about vaccine long-term effects and natural immunity. Critical thinking and personal choice should guide health decisions, not mandates from authorities."'
+                      : '"COVID-19 vaccines are safe and effective. Trust the science and follow public health guidelines to protect yourself and others from this dangerous virus."';
+                  } else if (content.includes('Hamas-Israel War')) {
+                    return isNarrativeFlipped 
+                      ? '"Israel has the right to defend itself against terrorism. Hamas uses human shields and commits war crimes while Israel takes every precaution to minimize civilian casualties."'
+                      : '"Israel is committing genocide against Palestinians. The international community must act to stop this ethnic cleansing and hold war criminals accountable."';
+                  } else if (content.includes('Anti-Gun Propaganda')) {
+                    return isNarrativeFlipped 
+                      ? '"Law-abiding gun owners are not the problem. Mental health issues and weak law enforcement cause mass shootings, not access to firearms."'
+                      : '"We must implement immediate gun control measures. No civilian needs assault weapons - common sense gun laws will save lives and prevent future tragedies."';
+                  } else {
+                    return isNarrativeFlipped 
+                      ? '"Alternative perspective on the analyzed content with counter-narrative viewpoint."'
+                      : '"Primary narrative detected in the analyzed content."';
+                  }
+                })()}
               </Text>
               <Button
                 title={isNarrativeFlipped ? 'Show original narrative' : 'Flip the narrative'}
@@ -456,134 +678,16 @@ export function ContentAnalysisSheetV2({
                 <Text style={styles.cardTitle}>What we detected</Text>
               </View>
               
-              {/* Biases and Sub-narratives List */}
+              {/* Simple Accordion Items */}
               <View style={styles.detectionsList}>
-                {/* COVID-19 Misinformation */}
-                <TouchableOpacity style={styles.detectionItem} activeOpacity={0.7}>
-                  <Image 
-                    source={require('../../assets/analysis-icons/covid-19.png')} 
-                    style={styles.detectionIcon}
+                {createAccordionData(content).map((item) => (
+                  <SimpleAccordionItem
+                    key={item.id}
+                    item={item}
+                    isExpanded={expandedItems.has(item.id)}
+                    onToggle={() => toggleAccordionItem(item.id)}
                   />
-                  <View style={styles.detectionContent}>
-                    <Text style={styles.detectionTitle}>COVID-19 Misinformation</Text>
-                    <Text style={styles.detectionDescription}>
-                      Vaccine skepticism and anti-mandate rhetoric
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="rgba(0, 0, 0, 0.3)" />
-                </TouchableOpacity>
-                <View style={styles.detectionDivider} />
-
-                {/* Authority Bias */}
-                <TouchableOpacity style={styles.detectionItem} activeOpacity={0.7}>
-                  <Image 
-                    source={require('../../assets/analysis-icons/authority.png')} 
-                    style={styles.detectionIcon}
-                  />
-                  <View style={styles.detectionContent}>
-                    <Text style={styles.detectionTitle}>Appeal to Authority</Text>
-                    <Text style={styles.detectionDescription}>
-                      Using "trust the science" without evidence
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="rgba(0, 0, 0, 0.3)" />
-                </TouchableOpacity>
-                <View style={styles.detectionDivider} />
-
-                {/* Fear Mongering */}
-                <TouchableOpacity style={styles.detectionItem} activeOpacity={0.7}>
-                  <Image 
-                    source={require('../../assets/analysis-icons/fear.png')} 
-                    style={styles.detectionIcon}
-                  />
-                  <View style={styles.detectionContent}>
-                    <Text style={styles.detectionTitle}>Fear Mongering</Text>
-                    <Text style={styles.detectionDescription}>
-                      Exaggerating dangers to influence behavior
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="rgba(0, 0, 0, 0.3)" />
-                </TouchableOpacity>
-                <View style={styles.detectionDivider} />
-
-                {/* Government Narrative */}
-                <TouchableOpacity style={styles.detectionItem} activeOpacity={0.7}>
-                  <Image 
-                    source={require('../../assets/analysis-icons/government.png')} 
-                    style={styles.detectionIcon}
-                  />
-                  <View style={styles.detectionContent}>
-                    <Text style={styles.detectionTitle}>Government Narrative</Text>
-                    <Text style={styles.detectionDescription}>
-                      Promoting official health policy positions
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="rgba(0, 0, 0, 0.3)" />
-                </TouchableOpacity>
-                <View style={styles.detectionDivider} />
-
-                {/* Pharma Influence */}
-                <TouchableOpacity style={styles.detectionItem} activeOpacity={0.7}>
-                  <Image 
-                    source={require('../../assets/analysis-icons/pharma.png')} 
-                    style={styles.detectionIcon}
-                  />
-                  <View style={styles.detectionContent}>
-                    <Text style={styles.detectionTitle}>Pharmaceutical Influence</Text>
-                    <Text style={styles.detectionDescription}>
-                      Potential industry-backed messaging
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="rgba(0, 0, 0, 0.3)" />
-                </TouchableOpacity>
-                <View style={styles.detectionDivider} />
-
-                {/* Inflammatory Language */}
-                <TouchableOpacity style={styles.detectionItem} activeOpacity={0.7}>
-                  <Image 
-                    source={require('../../assets/analysis-icons/inflamatory.png')} 
-                    style={styles.detectionIcon}
-                  />
-                  <View style={styles.detectionContent}>
-                    <Text style={styles.detectionTitle}>Inflammatory Language</Text>
-                    <Text style={styles.detectionDescription}>
-                      Using divisive terms to polarize opinion
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="rgba(0, 0, 0, 0.3)" />
-                </TouchableOpacity>
-                <View style={styles.detectionDivider} />
-
-                {/* Framing Bias */}
-                <TouchableOpacity style={styles.detectionItem} activeOpacity={0.7}>
-                  <Image 
-                    source={require('../../assets/analysis-icons/framing.png')} 
-                    style={styles.detectionIcon}
-                  />
-                  <View style={styles.detectionContent}>
-                    <Text style={styles.detectionTitle}>Selective Framing</Text>
-                    <Text style={styles.detectionDescription}>
-                      Presenting only one side of the debate
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="rgba(0, 0, 0, 0.3)" />
-                </TouchableOpacity>
-                <View style={styles.detectionDivider} />
-
-                {/* Anti-Free Speech */}
-                <TouchableOpacity style={styles.detectionItem} activeOpacity={0.7}>
-                  <Image 
-                    source={require('../../assets/analysis-icons/anti-free-speech.png')} 
-                    style={styles.detectionIcon}
-                  />
-                  <View style={styles.detectionContent}>
-                    <Text style={styles.detectionTitle}>Censorship Narrative</Text>
-                    <Text style={styles.detectionDescription}>
-                      Claims about suppression of dissent
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color="rgba(0, 0, 0, 0.3)" />
-                </TouchableOpacity>
+                ))}
               </View>
             </View>
             </>
@@ -770,5 +874,17 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.08)',
     marginVertical: 8,
+  },
+  accordionExpanded: {
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 8,
+  },
+  accordionExpandedText: {
+    fontSize: 14,
+    fontFamily: fonts.regular,
+    color: 'rgba(0, 0, 0, 0.8)',
+    lineHeight: 22,
   },
 });
