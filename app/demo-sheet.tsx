@@ -20,6 +20,30 @@ const LONG_DESCRIPTION = 'This is a very long description that tests the scrolli
   'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. ' +
   'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
 
+// Demo shared content examples
+const DEMO_URL = 'https://example.com/breaking-news-article';
+const DEMO_TEXT_CONTENT = 'This is a sample text content that was shared for analysis. It contains various claims that need to be fact-checked and analyzed for propaganda techniques.';
+const DEMO_SOURCES = [
+  {
+    title: 'Breaking: Government Announces New Policy',
+    url: 'https://news-source-1.com/article',
+    domain: 'news-source-1.com',
+    thumbnail: 'https://picsum.photos/120/60?1'
+  },
+  {
+    title: 'Expert Analysis on Recent Changes',
+    url: 'https://analysis-site.com/expert-view',
+    domain: 'analysis-site.com',
+    thumbnail: 'https://picsum.photos/120/60?2'
+  },
+  {
+    title: 'Citizens React to New Reforms',
+    url: 'https://local-news.com/reactions',
+    domain: 'local-news.com',
+    thumbnail: 'https://picsum.photos/120/60?3'
+  }
+];
+
 export default function DemoSheetScreen() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [variant, setVariant] = useState<Variant>('loading');
@@ -27,6 +51,8 @@ export default function DemoSheetScreen() {
   const [confidence, setConfidence] = useState(0.85);
   const [useLongText, setUseLongText] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [contentMode, setContentMode] = useState<'none' | 'url' | 'text' | 'audio' | 'trending'>('none');
+  const [isTrendingAnalysis, setIsTrendingAnalysis] = useState(false);
 
   const handleVariantChange = useCallback((newVariant: Variant) => {
     setVariant(newVariant);
@@ -105,12 +131,43 @@ export default function DemoSheetScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Shared Content Mode</Text>
+          <View style={styles.variantGrid}>
+            {(['none', 'url', 'text', 'audio', 'trending'] as const).map((mode) => (
+              <Pressable
+                key={mode}
+                style={[
+                  styles.variantButton,
+                  contentMode === mode && styles.variantButtonActive,
+                ]}
+                onPress={() => {
+                  setContentMode(mode);
+                  setIsTrendingAnalysis(mode === 'trending');
+                }}
+              >
+                <Text style={styles.variantButtonText}>{mode}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Options</Text>
           <View style={styles.option}>
             <Text style={styles.optionLabel}>Use Long Text</Text>
             <Switch
               value={useLongText}
               onValueChange={setUseLongText}
+            />
+          </View>
+          <View style={styles.option}>
+            <Text style={styles.optionLabel}>Trending Analysis</Text>
+            <Switch
+              value={isTrendingAnalysis}
+              onValueChange={(value) => {
+                setIsTrendingAnalysis(value);
+                if (value) setContentMode('trending');
+              }}
             />
           </View>
           <View style={styles.option}>
@@ -160,6 +217,29 @@ export default function DemoSheetScreen() {
               }}
               fullWidth
             />
+            <Button
+              variant="outline"
+              size="medium"
+              title="URL Content Demo"
+              onPress={() => {
+                setContentMode('url');
+                setVariant('deceptive');
+                setSheetOpen(true);
+              }}
+              fullWidth
+            />
+            <Button
+              variant="outline"
+              size="medium"
+              title="Trending Analysis Demo"
+              onPress={() => {
+                setContentMode('trending');
+                setIsTrendingAnalysis(true);
+                setVariant('safe');
+                setSheetOpen(true);
+              }}
+              fullWidth
+            />
           </View>
         </View>
       </ScrollView>
@@ -174,6 +254,15 @@ export default function DemoSheetScreen() {
         title={DEMO_TITLE}
         description={useLongText ? LONG_DESCRIPTION : DEMO_DESCRIPTION}
         confidence={confidence}
+        sharedContent={
+          contentMode === 'url' ? DEMO_URL :
+          contentMode === 'text' ? DEMO_TEXT_CONTENT :
+          contentMode === 'audio' ? 'audio-file.mp3' :
+          undefined
+        }
+        sharedContentType={contentMode === 'none' ? undefined : contentMode}
+        sources={isTrendingAnalysis ? DEMO_SOURCES : undefined}
+        isTrendingAnalysis={isTrendingAnalysis}
         inputPlaceholder="Enter URL or text to analyze..."
         inputInitialValue={inputValue}
         onChangeInput={setInputValue}

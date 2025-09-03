@@ -9,6 +9,13 @@ export interface Technique {
   example: string;
 }
 
+export interface SourceInfo {
+  title: string;
+  url: string;
+  domain: string;
+  thumbnail?: string;
+}
+
 export interface ContentAnalysisSheetProps {
   open: boolean;
   onClose: () => void;
@@ -25,6 +32,12 @@ export interface ContentAnalysisSheetProps {
   quickAssessment?: string;
   counterPerspective?: string;
   reflectionQuestions?: string[];
+
+  // Shared Content props
+  sharedContent?: string;
+  sharedContentType?: 'url' | 'text' | 'audio' | 'trending';
+  sources?: SourceInfo[];
+  isTrendingAnalysis?: boolean;
 
   inputPlaceholder?: string;
   inputInitialValue?: string;

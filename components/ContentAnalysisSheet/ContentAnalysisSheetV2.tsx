@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { fonts } from '../../constants/fonts';
 import { Button } from '../Button';
+import { SharedContent } from './SharedContent';
 import BottomSheet, { BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BlurView } from 'expo-blur';
 import Animated, {
@@ -42,6 +43,16 @@ interface ContentAnalysisSheetV2Props {
   isLoading?: boolean;
   isVisible: boolean;
   onClose: () => void;
+  // Shared Content props
+  sharedContent?: string;
+  sharedContentType?: 'url' | 'text' | 'audio' | 'trending';
+  sources?: Array<{
+    title: string;
+    url: string;
+    domain: string;
+    thumbnail?: string;
+  }>;
+  isTrendingAnalysis?: boolean;
 }
 
 export function ContentAnalysisSheetV2({ 
@@ -49,7 +60,11 @@ export function ContentAnalysisSheetV2({
   analysis, 
   isLoading = false,
   isVisible,
-  onClose
+  onClose,
+  sharedContent,
+  sharedContentType,
+  sources,
+  isTrendingAnalysis = false
 }: ContentAnalysisSheetV2Props) {
   // Bottom sheet ref
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -321,7 +336,11 @@ export function ContentAnalysisSheetV2({
   
   // Create accordion data structure
   const createAccordionData = (content: string) => {
-    if (content.includes('COVID') || content.includes('covid')) {
+    console.log('ContentAnalysisSheetV2 received content:', content);
+    console.log('ContentAnalysisSheetV2 received analysis:', analysis);
+    
+    if (content.includes('who.int') || content.includes('COVID') || content.includes('covid')) {
+      console.log('Detected COVID content');
       return [
         {
           id: 'covid-misinfo',
@@ -359,7 +378,8 @@ export function ContentAnalysisSheetV2({
           detailedContent: 'The messaging shows potential pharmaceutical industry influence through uncritical promotion of medical interventions, downplaying of financial incentives, and exclusion of non-pharmaceutical solutions. Industry-funded studies are presented without disclosure of conflicts of interest.'
         }
       ];
-    } else if (content.includes('Hamas-Israel War')) {
+    } else if (content.includes('bbc.com') || content.includes('Hamas-Israel War')) {
+      console.log('Detected Hamas-Israel content');
       return [
         {
           id: 'conflict-misinfo',
@@ -397,7 +417,8 @@ export function ContentAnalysisSheetV2({
           detailedContent: 'The content creates false moral equivalencies between targeted attacks on civilians and military responses to those attacks. This includes portraying terrorist organizations as freedom fighters or equating defensive military actions with offensive terrorism, obscuring important distinctions in international law.'
         }
       ];
-    } else if (content.includes('Anti-Gun Propaganda')) {
+    } else if (content.includes('apnews.com') || content.includes('Anti-Gun Propaganda')) {
+      console.log('Detected Anti-Gun content');
       return [
         {
           id: 'tragedy-exploitation',
@@ -436,6 +457,7 @@ export function ContentAnalysisSheetV2({
         }
       ];
     } else {
+      console.log('No specific content detected, using fallback');
       return [
         {
           id: 'general-analysis',
@@ -529,11 +551,11 @@ export function ContentAnalysisSheetV2({
             <Ionicons name="arrow-back" size={22} color="#000000" />
           </TouchableOpacity>
           <Text style={styles.compactHeaderTitle}>
-            {content.includes('COVID') || content.includes('covid') 
+            {content.includes('who.int') || content.includes('COVID') || content.includes('covid') 
               ? 'COVID-19 Propaganda'
-              : content.includes('Hamas-Israel War')
-              ? 'Hamas-Israel War'
-              : content.includes('Anti-Gun Propaganda')
+              : content.includes('bbc.com') || content.includes('Hamas-Israel War')
+              ? 'Hamas-Israel War Propaganda'
+              : content.includes('apnews.com') || content.includes('Anti-Gun Propaganda')
               ? 'Anti-Gun Propaganda'
               : 'Analysis Results'
             }
@@ -566,37 +588,45 @@ export function ContentAnalysisSheetV2({
               <Animated.View style={[styles.scrollableHeader, headerContainerStyle]}>
                 <Animated.Image 
                   source={
-                    content.includes('COVID') || content.includes('covid') 
+                    content.includes('who.int') || content.includes('COVID') || content.includes('covid') 
                       ? require('../../assets/analysis-icons/covid-19.png')
-                      : content.includes('Hamas-Israel War')
+                      : content.includes('bbc.com') || content.includes('Hamas-Israel War')
                       ? require('../../assets/analysis-icons/government.png')
-                      : content.includes('Anti-Gun Propaganda')
+                      : content.includes('apnews.com') || content.includes('Anti-Gun Propaganda')
                       ? require('../../assets/analysis-icons/anti-free-speech.png')
                       : require('../../assets/analysis-icons/unknown.png')
                   } 
                   style={[styles.headingIcon, iconStyle]}
                 />
                 <Animated.Text style={[styles.headingTitle, titleStyle]}>
-                  {content.includes('COVID') || content.includes('covid') 
+                  {content.includes('who.int') || content.includes('COVID') || content.includes('covid') 
                     ? 'COVID-19 Propaganda'
-                    : content.includes('Hamas-Israel War')
-                    ? 'Hamas-Israel War'
-                    : content.includes('Anti-Gun Propaganda')
+                    : content.includes('bbc.com') || content.includes('Hamas-Israel War')
+                    ? 'Hamas-Israel War Propaganda'
+                    : content.includes('apnews.com') || content.includes('Anti-Gun Propaganda')
                     ? 'Anti-Gun Propaganda'
                     : 'Analysis Results'
                   }
                 </Animated.Text>
                 <Animated.Text style={[styles.headingDescription, descriptionStyle]}>
-                  {content.includes('COVID') || content.includes('covid') 
+                  {content.includes('who.int') || content.includes('COVID') || content.includes('covid') 
                     ? 'Identifying misinformation and propaganda techniques\nin COVID-19 related content'
-                    : content.includes('Hamas-Israel War')
+                    : content.includes('bbc.com') || content.includes('Hamas-Israel War')
                     ? 'Analyzing propaganda and bias in conflict-related content'
-                    : content.includes('Anti-Gun Propaganda')
+                    : content.includes('apnews.com') || content.includes('Anti-Gun Propaganda')
                     ? 'Detecting emotional manipulation in gun control messaging'
                     : 'Detailed propaganda analysis of the content'
                   }
                 </Animated.Text>
               </Animated.View>
+
+            {/* Shared Content Section */}
+            <SharedContent
+              content={sharedContent}
+              contentType={isTrendingAnalysis ? 'trending' : sharedContentType}
+              sources={sources}
+              analyzeMetadata={true}
+            />
 
             {/* Confidence Level Card */}
             <View style={styles.insideCard}>
@@ -641,15 +671,15 @@ export function ContentAnalysisSheetV2({
               </View>
               <Text style={styles.narrativeDescription}>
                 {(() => {
-                  if (content.includes('COVID') || content.includes('covid')) {
+                  if (content.includes('who.int') || content.includes('COVID') || content.includes('covid')) {
                     return isNarrativeFlipped 
                       ? '"Questions remain about vaccine long-term effects and natural immunity. Critical thinking and personal choice should guide health decisions, not mandates from authorities."'
                       : '"COVID-19 vaccines are safe and effective. Trust the science and follow public health guidelines to protect yourself and others from this dangerous virus."';
-                  } else if (content.includes('Hamas-Israel War')) {
+                  } else if (content.includes('bbc.com') || content.includes('Hamas-Israel War')) {
                     return isNarrativeFlipped 
                       ? '"Israel has the right to defend itself against terrorism. Hamas uses human shields and commits war crimes while Israel takes every precaution to minimize civilian casualties."'
                       : '"Israel is committing genocide against Palestinians. The international community must act to stop this ethnic cleansing and hold war criminals accountable."';
-                  } else if (content.includes('Anti-Gun Propaganda')) {
+                  } else if (content.includes('apnews.com') || content.includes('Anti-Gun Propaganda')) {
                     return isNarrativeFlipped 
                       ? '"Law-abiding gun owners are not the problem. Mental health issues and weak law enforcement cause mass shootings, not access to firearms."'
                       : '"We must implement immediate gun control measures. No civilian needs assault weapons - common sense gun laws will save lives and prevent future tragedies."';

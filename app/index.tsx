@@ -149,10 +149,95 @@ export default function HomeScreen() {
 
   // Handle carousel item click
   const handleCarouselItemClick = useCallback((item: any) => {
-    console.log('Carousel item clicked:', item.title);
-    // Set content and open sheet with empty analysis
-    setSheetContent(item.title); // Changed from item.description to item.title
-    setSheetAnalysis(null);
+    console.log('Carousel item clicked:', item.title, 'URL:', item.url);
+    console.log('Full item:', item);
+    
+    // Create specific analysis data for each carousel item
+    const getAnalysisForItem = (itemId: string) => {
+      switch (itemId) {
+        case '1': // COVID-19 Misinformation
+          return {
+            confidence: 87,
+            summary: 'Analysis detected multiple propaganda techniques commonly used in COVID-19 misinformation campaigns, including fear appeals, false authority claims, and cherry-picked data to undermine public health measures.',
+            techniques: [
+              {
+                name: 'Fear Appeals',
+                description: 'Using fear-inducing language to discourage vaccination or compliance with health measures',
+                severity: 'high',
+                examples: ['Vaccine side effects are being covered up by big pharma']
+              },
+              {
+                name: 'False Authority',
+                description: 'Citing discredited or unqualified sources as medical experts',
+                severity: 'high',
+                examples: ['Dr. X says vaccines are dangerous (but Dr. X is not an immunologist)']
+              },
+              {
+                name: 'Cherry-Picking',
+                description: 'Selecting only data that supports a predetermined conclusion while ignoring contrary evidence',
+                severity: 'medium',
+                examples: ['Focusing only on rare adverse events while ignoring overall safety data']
+              }
+            ]
+          };
+        case '2': // Hamas-Israel War
+          return {
+            confidence: 92,
+            summary: 'Analysis identified propaganda techniques including emotional manipulation, selective framing, and dehumanization tactics commonly used by all sides to shape public opinion about the Israel-Palestine conflict.',
+            techniques: [
+              {
+                name: 'Emotional Manipulation',
+                description: 'Using emotionally charged imagery and language to bypass rational analysis',
+                severity: 'high',
+                examples: ['Graphic images without context to generate outrage']
+              },
+              {
+                name: 'Selective Framing',
+                description: 'Presenting events in a way that supports one narrative while omitting crucial context',
+                severity: 'high',
+                examples: ['Showing only the response to an attack, not the initial provocation']
+              },
+              {
+                name: 'Dehumanization',
+                description: 'Portraying the opposing side as less than human to justify violence',
+                severity: 'high',
+                examples: ['Referring to enemies as "animals" or "terrorists" without distinction']
+              }
+            ]
+          };
+        case '3': // Anti-Gun Propaganda
+          return {
+            confidence: 78,
+            summary: 'Analysis detected propaganda techniques including loaded language, false dilemmas, and statistical manipulation commonly used in gun control debates to influence public opinion.',
+            techniques: [
+              {
+                name: 'Loaded Language',
+                description: 'Using emotionally charged terms to bias the audience',
+                severity: 'medium',
+                examples: ['"Assault weapons" vs "modern sporting rifles" - different terms for same items']
+              },
+              {
+                name: 'False Dilemma',
+                description: 'Presenting only two extreme options when many solutions exist',
+                severity: 'high',
+                examples: ['Either ban all guns or accept mass shootings as normal']
+              },
+              {
+                name: 'Statistical Manipulation',
+                description: 'Using misleading statistics or presenting data without proper context',
+                severity: 'medium',
+                examples: ['Including suicides in "gun violence" statistics to inflate numbers']
+              }
+            ]
+          };
+        default:
+          return null;
+      }
+    };
+    
+    // Set URL as content and specific analysis data
+    setSheetContent(item.url);
+    setSheetAnalysis(getAnalysisForItem(item.id));
     setSheetVisible(true);
     console.log('Sheet should be visible now:', true);
   }, []);
@@ -280,6 +365,23 @@ export default function HomeScreen() {
           isLoading={sheetLoading}
           isVisible={sheetVisible}
           onClose={() => setSheetVisible(false)}
+          sharedContent={sheetContent}
+          sharedContentType="url"
+          sources={[
+            {
+              title: 'Breaking News: Major Development',
+              url: 'https://news1.com/story',
+              domain: 'news1.com',
+              thumbnail: 'https://picsum.photos/120/60?1'
+            },
+            {
+              title: 'Expert Analysis on Latest Events',
+              url: 'https://analysis.com/expert-view',
+              domain: 'analysis.com',
+              thumbnail: 'https://picsum.photos/120/60?2'
+            }
+          ]}
+          isTrendingAnalysis={false}
         />
       )}
     </View>

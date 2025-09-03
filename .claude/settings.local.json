@@ -11,7 +11,17 @@
       "Bash(taskkill:*)",
       "Bash(cmd /c:*)",
       "Bash(find:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Read(/home/mateus/Documents/Projects/lens/propaganda-lens-ai/**)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(xdg-open:*)",
+      "Bash(open http://localhost:8082)",
+      "Bash(npm run lint)",
+      "Bash(npx eslint:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }

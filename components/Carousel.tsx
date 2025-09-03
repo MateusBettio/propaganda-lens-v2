@@ -14,6 +14,7 @@ export interface CarouselItem {
   title: string;
   description: string;
   timestamp: string;
+  url: string;
 }
 
 interface CarouselProps {
@@ -27,6 +28,7 @@ const placeholderItems: CarouselItem[] = [
     title: 'COVID-19 Misinformation',
     description: 'Detected multiple propaganda techniques including fear appeals and false authority in social media posts spreading COVID-19 conspiracy theories',
     timestamp: '2 hours ago',
+    url: 'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/advice-for-public/myth-busters',
   },
   {
     id: '2', 
@@ -34,6 +36,7 @@ const placeholderItems: CarouselItem[] = [
     title: 'Hamas-Israel War',
     description: 'Detected propaganda techniques including emotional manipulation and selective framing in social media posts about the conflict',
     timestamp: '5 hours ago',
+    url: 'https://www.bbc.com/news/world-middle-east-67039975',
   },
   {
     id: '3',
@@ -41,6 +44,7 @@ const placeholderItems: CarouselItem[] = [
     title: 'Anti-Gun Propaganda',
     description: 'Identified fear appeals and loaded language in media coverage following mass shooting incident',
     timestamp: '1 day ago',
+    url: 'https://apnews.com/hub/gun-violence',
   },
 ];
 

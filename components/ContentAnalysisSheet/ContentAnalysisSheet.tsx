@@ -2,12 +2,12 @@ import React, { useRef, useCallback, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import BottomSheet, {
   BottomSheetScrollView,
-  useBottomSheetDynamicSnapPoints,
 } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CustomBackdrop } from './CustomBackdrop';
 import { Header } from './Header';
+import { SharedContent } from './SharedContent';
 import { AnalysisBodyPlaceholder } from './AnalysisBodyPlaceholder';
 import { TabsView } from './TabsView';
 import { BottomSection } from './BottomSection';
@@ -27,6 +27,10 @@ export const ContentAnalysisSheet: React.FC<ContentAnalysisSheetProps> = React.m
   quickAssessment,
   counterPerspective,
   reflectionQuestions,
+  sharedContent,
+  sharedContentType,
+  sources,
+  isTrendingAnalysis = false,
   inputPlaceholder,
   inputInitialValue,
   onChangeInput,
@@ -84,6 +88,13 @@ export const ContentAnalysisSheet: React.FC<ContentAnalysisSheetProps> = React.m
             <Header
               variant={variant}
               confidence={confidence}
+            />
+            
+            <SharedContent
+              content={sharedContent}
+              contentType={isTrendingAnalysis ? 'trending' : sharedContentType}
+              sources={sources}
+              analyzeMetadata={true}
             />
             
             <TabsView

@@ -14,7 +14,6 @@
     "@expo-google-fonts/instrument-serif": "^0.4.0",
     "@gorhom/bottom-sheet": "^5.2.4",
     "@react-native-async-storage/async-storage": "^2.1.2",
-    "@supabase/supabase-js": "^2.52.0",
     "expo": "^53.0.22",
     "expo-auth-session": "~6.2.1",
     "expo-blur": "^14.1.5",
