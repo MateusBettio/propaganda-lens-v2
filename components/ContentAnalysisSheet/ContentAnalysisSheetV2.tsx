@@ -14,8 +14,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { fonts } from '../../constants/fonts';
-import { Button } from '../Button';
 import { SharedContent } from './SharedContent';
+import { PoliticalPerspectiveCarousel, PoliticalPerspective } from './PoliticalPerspectiveCarousel';
 import BottomSheet, { BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BlurView } from 'expo-blur';
 import Animated, {
@@ -70,8 +70,8 @@ export function ContentAnalysisSheetV2({
   const bottomSheetRef = useRef<BottomSheet>(null);
   const scrollViewRef = useRef<any>(null);
   
-  // Narrative flip state
-  const [isNarrativeFlipped, setIsNarrativeFlipped] = useState(false);
+  // Narrative perspective state
+  const [selectedPerspective, setSelectedPerspective] = useState<PoliticalPerspective | null>(null);
   const flipAnimation = useSharedValue(0);
   
   // Accordion state
@@ -179,13 +179,13 @@ export function ContentAnalysisSheetV2({
     });
   }, []);
 
-  // Handle narrative flip
-  const handleFlipNarrative = useCallback(() => {
-    flipAnimation.value = withTiming(isNarrativeFlipped ? 0 : 1, { duration: 600 });
-    setTimeout(() => {
-      setIsNarrativeFlipped(!isNarrativeFlipped);
-    }, 300);
-  }, [isNarrativeFlipped, flipAnimation]);
+  // Handle perspective change
+  const handlePerspectiveChange = useCallback((perspective: PoliticalPerspective) => {
+    flipAnimation.value = withTiming(1, { duration: 300 }, () => {
+      flipAnimation.value = withTiming(0, { duration: 300 });
+    });
+    setSelectedPerspective(perspective);
+  }, [flipAnimation]);
 
   const renderBackground = useCallback(
     (props: any) => (
@@ -666,39 +666,80 @@ export function ContentAnalysisSheetV2({
             <Animated.View style={[styles.insideCard, frontCardStyle]}>
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>
-                  {isNarrativeFlipped ? 'Counter narrative' : 'Narrative detected'}
+                  {selectedPerspective ? `${selectedPerspective.charAt(0).toUpperCase() + selectedPerspective.slice(1)} perspective` : 'Narrative detected'}
                 </Text>
               </View>
               <Text style={styles.narrativeDescription}>
                 {(() => {
-                  if (content.includes('who.int') || content.includes('COVID') || content.includes('covid')) {
-                    return isNarrativeFlipped 
-                      ? '"Questions remain about vaccine long-term effects and natural immunity. Critical thinking and personal choice should guide health decisions, not mandates from authorities."'
-                      : '"COVID-19 vaccines are safe and effective. Trust the science and follow public health guidelines to protect yourself and others from this dangerous virus."';
-                  } else if (content.includes('bbc.com') || content.includes('Hamas-Israel War')) {
-                    return isNarrativeFlipped 
-                      ? '"Israel has the right to defend itself against terrorism. Hamas uses human shields and commits war crimes while Israel takes every precaution to minimize civilian casualties."'
-                      : '"Israel is committing genocide against Palestinians. The international community must act to stop this ethnic cleansing and hold war criminals accountable."';
-                  } else if (content.includes('apnews.com') || content.includes('Anti-Gun Propaganda')) {
-                    return isNarrativeFlipped 
-                      ? '"Law-abiding gun owners are not the problem. Mental health issues and weak law enforcement cause mass shootings, not access to firearms."'
-                      : '"We must implement immediate gun control measures. No civilian needs assault weapons - common sense gun laws will save lives and prevent future tragedies."';
-                  } else {
-                    return isNarrativeFlipped 
-                      ? '"Alternative perspective on the analyzed content with counter-narrative viewpoint."'
-                      : '"Primary narrative detected in the analyzed content."';
-                  }
+                  const getNarrative = (perspective: PoliticalPerspective | null) => {
+                    if (content.includes('who.int') || content.includes('COVID') || content.includes('covid')) {
+                      switch(perspective) {
+                        case 'left':
+                          return '"The government must enforce strict health measures to protect vulnerable populations. Anti-vaxxers are endangering society with their selfish behavior."';
+                        case 'center':
+                          return '"Vaccines have benefits and risks that should be openly discussed. Public health measures should balance safety with personal freedoms."';
+                        case 'right':
+                          return '"Personal medical freedom is paramount. Government mandates are unconstitutional overreach that violates individual liberty."';
+                        case 'libertarian':
+                          return '"Each person owns their body and should make their own medical decisions. The state has no authority to mandate medical procedures."';
+                        case 'authoritarian':
+                          return '"Strong government action is needed to combat this crisis. Those who refuse compliance must face consequences for the greater good."';
+                        default:
+                          return '"COVID-19 vaccines are safe and effective. Trust the science and follow public health guidelines to protect yourself and others from this dangerous virus."';
+                      }
+                    } else if (content.includes('bbc.com') || content.includes('Hamas-Israel War')) {
+                      switch(perspective) {
+                        case 'left':
+                          return '"Israel is an apartheid state committing genocide. Palestinian resistance is justified against colonial oppression."';
+                        case 'center':
+                          return '"Both sides have legitimate grievances and have committed wrongs. A two-state solution requires compromise from both parties."';
+                        case 'right':
+                          return '"Israel has the right to defend itself against terrorism. Hamas is using civilians as human shields."';
+                        case 'libertarian':
+                          return '"Foreign interventions and aid perpetuate this conflict. Let both sides resolve their disputes without external interference."';
+                        case 'authoritarian':
+                          return '"Strong military action is justified to establish order. One side must achieve decisive victory to end the chaos."';
+                        default:
+                          return '"Israel is committing genocide against Palestinians. The international community must act to stop this ethnic cleansing and hold war criminals accountable."';
+                      }
+                    } else if (content.includes('apnews.com') || content.includes('Anti-Gun Propaganda')) {
+                      switch(perspective) {
+                        case 'left':
+                          return '"Assault weapons have no place in civilian hands. We need comprehensive gun control to stop the epidemic of gun violence."';
+                        case 'center':
+                          return '"Common-sense gun regulations can respect the Second Amendment while improving public safety through background checks and red flag laws."';
+                        case 'right':
+                          return '"The Second Amendment is absolute. Gun control only disarms law-abiding citizens while criminals ignore the laws."';
+                        case 'libertarian':
+                          return '"Gun ownership is a fundamental right. The government has no constitutional authority to restrict arms."';
+                        case 'authoritarian':
+                          return '"Only government and law enforcement should have weapons. Civilian disarmament is necessary for public order."';
+                        default:
+                          return '"We must implement immediate gun control measures. No civilian needs assault weapons - common sense gun laws will save lives and prevent future tragedies."';
+                      }
+                    } else {
+                      switch(perspective) {
+                        case 'left':
+                          return '"Progressive values and social justice should guide our interpretation of this content."';
+                        case 'center':
+                          return '"A balanced, moderate approach considering multiple viewpoints is most appropriate here."';
+                        case 'right':
+                          return '"Traditional values and conservative principles provide the best framework for understanding this issue."';
+                        case 'libertarian':
+                          return '"Individual freedom and minimal government intervention are the key principles to consider."';
+                        case 'authoritarian':
+                          return '"Strong leadership and collective order are necessary to address this situation effectively."';
+                        default:
+                          return '"Primary narrative detected in the analyzed content."';
+                      }
+                    }
+                  };
+                  return getNarrative(selectedPerspective);
                 })()}
               </Text>
-              <Button
-                title={isNarrativeFlipped ? 'Show original narrative' : 'Flip the narrative'}
-                icon="refresh-outline"
-                iconPosition="left"
-                onPress={handleFlipNarrative}
-                variant="secondary"
-                size="medium"
-                style={styles.flipButton}
-                textStyle={styles.flipButtonText}
+              <PoliticalPerspectiveCarousel
+                selectedPerspective={selectedPerspective}
+                onPerspectiveSelect={handlePerspectiveChange}
               />
             </Animated.View>
 
@@ -806,12 +847,6 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     marginTop: 16,
     marginBottom: 20,
-  },
-  flipButton: {
-    alignSelf: 'flex-start',
-  },
-  flipButtonText: {
-    fontSize: 14,
   },
   flipContainer: {
     position: 'relative',

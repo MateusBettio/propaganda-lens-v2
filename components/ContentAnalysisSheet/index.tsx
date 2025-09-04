@@ -1,3 +1,3 @@
 export type { ContentAnalysisSheetProps, Variant, DetailType } from './types';
-export { ContentAnalysisSheet } from './ContentAnalysisSheet';
+export { ContentAnalysisSheetV2 as ContentAnalysisSheet } from './ContentAnalysisSheetV2';
 export { useContentAnalysisSheet } from './helpers';
