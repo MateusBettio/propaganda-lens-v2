@@ -56,6 +56,28 @@ export interface VariantConfig {
   label: string;
 }
 
+// Improved Analysis interface to replace 'any' type usage
+export interface Analysis {
+  confidence?: number;
+  summary?: string;
+  techniques?: Technique[];
+  variant?: Variant;
+  [key: string]: any; // Allow additional properties for backward compatibility
+}
+
+// Updated props interface for ContentAnalysisSheetV2
+export interface ContentAnalysisSheetV2Props {
+  content: string;
+  analysis: Analysis; // Replace 'any' with proper typing
+  isLoading?: boolean;
+  isVisible: boolean;
+  onClose: () => void;
+  sharedContent?: string;
+  sharedContentType?: 'url' | 'text' | 'audio' | 'trending';
+  sources?: SourceInfo[];
+  isTrendingAnalysis?: boolean;
+}
+
 export const VARIANT_CONFIGS: Record<Variant, VariantConfig> = {
   loading: {
     color: '#9CA3AF',

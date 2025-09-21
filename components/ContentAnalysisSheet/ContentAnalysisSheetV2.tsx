@@ -7,7 +7,6 @@ import {
   Image,
   Share,
   Dimensions,
-  Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from 'react-native';
@@ -18,7 +17,7 @@ import { SharedContent } from './SharedContent';
 import { PoliticalPerspectiveCarousel, PoliticalPerspective } from './PoliticalPerspectiveCarousel';
 import { ChatInputLight } from '../Chat/ChatInputLight';
 import { ChatScreen } from '../Chat';
-import BottomSheet, { BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BlurView } from 'expo-blur';
 import Animated, {
   interpolate,
@@ -27,79 +26,70 @@ import Animated, {
   useSharedValue,
   withTiming,
   Extrapolate,
-  runOnJS,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector } from 'react-native-gesture-handler';
+
+// Extracted imports
+import { ContentAnalysisSheetV2Props } from './types';
+import { THEME_COLORS, ANIMATION_CONFIG, LAYOUT_CONFIG } from './constants';
+import { useTabGestures, TabType } from './useTabGestures';
+import {
+  detectContentType,
+  getDetectionItems,
+  categorizeDetectionItems,
+  getContentDisplayInfo,
+  DetectionItem
+} from './contentDetection';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
-// Color variables - Light Theme
-const colors = {
-  default: '#1f2937', // Dark gray for text
-  light: '#6b7280', // Light gray for secondary text
-  background: '#ffffff', // White background
-  surface: '#f9fafb', // Light gray surface
-  border: '#e5e7eb', // Light border
-};
+export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
+  const {
+    content,
+    analysis,
+    isLoading = false,
+    isVisible,
+    onClose,
+    sharedContent,
+    sharedContentType,
+    sources,
+    isTrendingAnalysis = false
+  } = props;
 
-
-interface ContentAnalysisSheetV2Props {
-  content: string;
-  analysis: any;
-  isLoading?: boolean;
-  isVisible: boolean;
-  onClose: () => void;
-  // Shared Content props
-  sharedContent?: string;
-  sharedContentType?: 'url' | 'text' | 'audio' | 'trending';
-  sources?: Array<{
-    title: string;
-    url: string;
-    domain: string;
-    thumbnail?: string;
-  }>;
-  isTrendingAnalysis?: boolean;
-}
-
-export function ContentAnalysisSheetV2({
-  content,
-  analysis,
-  isLoading = false,
-  isVisible,
-  onClose,
-  sharedContent,
-  sharedContentType,
-  sources,
-  isTrendingAnalysis = false
-}: ContentAnalysisSheetV2Props) {
-  // Bottom sheet ref
+  // Refs
   const bottomSheetRef = useRef<BottomSheet>(null);
   const scrollViewRef = useRef<any>(null);
 
-  // Narrative perspective state
+  // Local state
   const [selectedPerspective, setSelectedPerspective] = useState<PoliticalPerspective | null>(null);
-  const flipAnimation = useSharedValue(0);
-
-  // Accordion state
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
-
-  // Tab and Chat state
-  const [activeTab, setActiveTab] = useState<'analysis' | 'chat'>('analysis');
+  const [activeTab, setActiveTab] = useState<TabType>('analysis');
   const [initialChatMessage, setInitialChatMessage] = useState<string>('');
   const [chatMessages, setChatMessages] = useState<string[]>([]);
   const [chatKey, setChatKey] = useState(0);
 
-  // Tab animation values
-  const tabTransition = useSharedValue(0); // 0 = analysis, 1 = chat
-  
-  // Scroll animation values
+  // Animation values
+  const flipAnimation = useSharedValue(0);
   const scrollY = useSharedValue(0);
-  const headerHeight = 250; // Height of full header
-  const compactHeaderHeight = 60; // Height of compact header
 
-  // Bottom sheet snap points - 80% and 95% for scrolling
-  const snapPoints = useMemo(() => ['80%', '95%'], []);
+  // Custom hooks
+  const {
+    tabTransition,
+    handleTabChange,
+    analysisPanGesture,
+    chatPanGesture,
+    resetTabAnimation,
+  } = useTabGestures({ onTabChange: setActiveTab });
+
+  // Constants
+  const snapPoints = useMemo(() => [...LAYOUT_CONFIG.BOTTOM_SHEET_SNAP_POINTS], []);
+
+  // Content detection
+  const contentType = useMemo(() => detectContentType(content), [content]);
+  const detectionItems = useMemo(() => getDetectionItems(contentType), [contentType]);
+  const categorizedData = useMemo(() => categorizeDetectionItems(detectionItems), [detectionItems]);
+  const displayInfo = useMemo(() => getContentDisplayInfo(contentType), [contentType]);
   
   // Handle modal visibility changes
   useEffect(() => {
@@ -121,60 +111,9 @@ export function ContentAnalysisSheetV2({
     setChatKey(prev => prev + 1);
   }, []);
 
-  const handleTabChange = useCallback((tab: 'analysis' | 'chat') => {
-    const targetValue = tab === 'analysis' ? 0 : 1;
-    tabTransition.value = withTiming(targetValue, {
-      duration: 300
-    });
-    setActiveTab(tab);
-  }, [tabTransition]);
+  // This is now handled by the useTabGestures hook
 
-  // Swipe gesture handlers for tab switching
-  const analysisPanGesture = Gesture.Pan()
-    .minDistance(10)
-    .activeOffsetX([-10, 10])
-    .failOffsetY([-30, 30])
-    .onEnd((event) => {
-      const swipeThreshold = 30;
-      const velocityThreshold = 300;
-      const { translationX, velocityX, translationY } = event;
-
-      // Only handle horizontal swipes
-      if (Math.abs(translationY) > Math.abs(translationX)) {
-        return;
-      }
-
-      // From analysis tab: only allow swipe left to chat
-      if (Math.abs(translationX) > swipeThreshold || Math.abs(velocityX) > velocityThreshold) {
-        if (translationX < 0 || velocityX < 0) {
-          // Swipe left - go to chat tab
-          runOnJS(handleTabChange)('chat');
-        }
-      }
-    });
-
-  const chatPanGesture = Gesture.Pan()
-    .minDistance(10)
-    .activeOffsetX([-10, 10])
-    .failOffsetY([-30, 30])
-    .onEnd((event) => {
-      const swipeThreshold = 30;
-      const velocityThreshold = 300;
-      const { translationX, velocityX, translationY } = event;
-
-      // Only handle horizontal swipes
-      if (Math.abs(translationY) > Math.abs(translationX)) {
-        return;
-      }
-
-      // From chat tab: only allow swipe right to analysis
-      if (Math.abs(translationX) > swipeThreshold || Math.abs(velocityX) > velocityThreshold) {
-        if (translationX > 0 || velocityX > 0) {
-          // Swipe right - go to analysis tab
-          runOnJS(handleTabChange)('analysis');
-        }
-      }
-    });
+  // Gesture handlers are now provided by useTabGestures hook
 
   // Animated backdrop component
   const renderBackdrop = useCallback(
@@ -238,14 +177,14 @@ export function ContentAnalysisSheetV2({
       setExpandedItems(new Set());
       scrollY.value = 0;
       flipAnimation.value = 0;
-      tabTransition.value = 0; // Reset tab animation
+      resetTabAnimation();
       setActiveTab('analysis');
       setChatMessages([]);
       setInitialChatMessage('');
       setChatKey(0);
       onClose();
     }
-  }, [onClose, scrollY, flipAnimation, tabTransition]);
+  }, [onClose, scrollY, flipAnimation, resetTabAnimation]);
 
 
   // Handle scroll event
@@ -315,13 +254,12 @@ export function ContentAnalysisSheetV2({
   });
 
   // Animated styles for header transformation
-  const SCROLL_DISTANCE = 120; // Distance for full transformation
   
   // Main header container animation
   const headerContainerStyle = useAnimatedStyle(() => {
     const translateY = interpolate(
       scrollY.value,
-      [0, SCROLL_DISTANCE],
+      [0, ANIMATION_CONFIG.SCROLL_DISTANCE],
       [0, -180],
       Extrapolate.CLAMP
     );
@@ -335,14 +273,14 @@ export function ContentAnalysisSheetV2({
   const iconStyle = useAnimatedStyle(() => {
     const scale = interpolate(
       scrollY.value,
-      [0, SCROLL_DISTANCE],
+      [0, ANIMATION_CONFIG.SCROLL_DISTANCE],
       [1, 0],
       Extrapolate.CLAMP
     );
     
     const opacity = interpolate(
       scrollY.value,
-      [0, SCROLL_DISTANCE * 0.5],
+      [0, ANIMATION_CONFIG.SCROLL_DISTANCE * 0.5],
       [1, 0],
       Extrapolate.CLAMP
     );
@@ -357,14 +295,14 @@ export function ContentAnalysisSheetV2({
   const titleStyle = useAnimatedStyle(() => {
     const translateY = interpolate(
       scrollY.value,
-      [0, SCROLL_DISTANCE],
+      [0, ANIMATION_CONFIG.SCROLL_DISTANCE],
       [0, -80],
       Extrapolate.CLAMP
     );
     
     const scale = interpolate(
       scrollY.value,
-      [0, SCROLL_DISTANCE],
+      [0, ANIMATION_CONFIG.SCROLL_DISTANCE],
       [1, 0.7],
       Extrapolate.CLAMP
     );
@@ -378,14 +316,14 @@ export function ContentAnalysisSheetV2({
   const descriptionStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
       scrollY.value,
-      [0, SCROLL_DISTANCE * 0.5],
+      [0, ANIMATION_CONFIG.SCROLL_DISTANCE * 0.5],
       [1, 0],
       Extrapolate.CLAMP
     );
     
     const translateY = interpolate(
       scrollY.value,
-      [0, SCROLL_DISTANCE],
+      [0, ANIMATION_CONFIG.SCROLL_DISTANCE],
       [0, -20],
       Extrapolate.CLAMP
     );
@@ -400,14 +338,14 @@ export function ContentAnalysisSheetV2({
   const compactHeaderStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
       scrollY.value,
-      [SCROLL_DISTANCE * 0.7, SCROLL_DISTANCE],
+      [ANIMATION_CONFIG.SCROLL_DISTANCE * 0.7, ANIMATION_CONFIG.SCROLL_DISTANCE],
       [0, 1],
       Extrapolate.CLAMP
     );
     
     const translateY = interpolate(
       scrollY.value,
-      [SCROLL_DISTANCE * 0.5, SCROLL_DISTANCE],
+      [ANIMATION_CONFIG.SCROLL_DISTANCE * 0.5, ANIMATION_CONFIG.SCROLL_DISTANCE],
       [20, 0],
       Extrapolate.CLAMP
     );
@@ -422,14 +360,14 @@ export function ContentAnalysisSheetV2({
   const buttonsStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
       scrollY.value,
-      [SCROLL_DISTANCE * 0.6, SCROLL_DISTANCE],
+      [ANIMATION_CONFIG.SCROLL_DISTANCE * 0.6, ANIMATION_CONFIG.SCROLL_DISTANCE],
       [0, 1],
       Extrapolate.CLAMP
     );
     
     const scale = interpolate(
       scrollY.value,
-      [SCROLL_DISTANCE * 0.6, SCROLL_DISTANCE],
+      [ANIMATION_CONFIG.SCROLL_DISTANCE * 0.6, ANIMATION_CONFIG.SCROLL_DISTANCE],
       [0.8, 1],
       Extrapolate.CLAMP
     );
@@ -483,194 +421,7 @@ export function ContentAnalysisSheetV2({
     };
   });
 
-  // Create categorized accordion data structure
-  const createAccordionData = (content: string) => {
-    console.log('ContentAnalysisSheetV2 received content:', content);
-    console.log('ContentAnalysisSheetV2 received analysis:', analysis);
-    
-    type DetectionItem = {
-      id: string;
-      icon: any;
-      title: string;
-      description: string;
-      detailedContent: string;
-      category: 'biases' | 'emotional' | 'logical' | 'credibility';
-    };
-
-    let items: DetectionItem[] = [];
-    
-    if (content.includes('who.int') || content.includes('COVID') || content.includes('covid')) {
-      console.log('Detected COVID content');
-      items = [
-        {
-          id: 'covid-misinfo',
-          icon: require('../../assets/analysis-icons/covid-19.png'),
-          title: 'COVID-19 Misinformation',
-          description: 'Vaccine skepticism and anti-mandate rhetoric',
-          detailedContent: 'This content promotes vaccine hesitancy by questioning safety data, spreading unverified claims about side effects, and portraying public health measures as authoritarian overreach. Common tactics include cherry-picking isolated cases, misrepresenting scientific studies, and appealing to personal freedom over collective health.',
-          category: 'credibility'
-        },
-        {
-          id: 'authority-appeal',
-          icon: require('../../assets/analysis-icons/authority.png'),
-          title: 'Appeal to Authority',
-          description: 'Using "trust the science" without evidence',
-          detailedContent: 'The content uses appeal to authority fallacies by invoking scientific credibility without providing actual evidence. Phrases like "trust the science" are used as conversation stoppers, while dissenting expert voices are dismissed or marginalized. This creates an illusion of scientific consensus where none may exist.',
-          category: 'logical'
-        },
-        {
-          id: 'fear-mongering',
-          icon: require('../../assets/analysis-icons/fear.png'),
-          title: 'Fear Mongering',
-          description: 'Exaggerating dangers to influence behavior',
-          detailedContent: 'Fear-based messaging amplifies worst-case scenarios to drive compliance with health measures. This includes highlighting rare adverse events, using apocalyptic language about virus variants, and creating anxiety about social consequences of non-compliance. The goal is emotional manipulation rather than rational persuasion.',
-          category: 'emotional'
-        },
-        {
-          id: 'govt-narrative',
-          icon: require('../../assets/analysis-icons/government.png'),
-          title: 'Government Narrative',
-          description: 'Promoting official health policy positions',
-          detailedContent: 'The content aligns closely with government health policies without acknowledging potential conflicts of interest or alternative viewpoints. Official statements are presented as unquestionable truth, and policy changes are framed as "following the science" rather than political or economic decisions.',
-          category: 'biases'
-        },
-        {
-          id: 'pharma-influence',
-          icon: require('../../assets/analysis-icons/pharma.png'),
-          title: 'Pharmaceutical Influence',
-          description: 'Potential industry-backed messaging',
-          detailedContent: 'The messaging shows potential pharmaceutical industry influence through uncritical promotion of medical interventions, downplaying of financial incentives, and exclusion of non-pharmaceutical solutions. Industry-funded studies are presented without disclosure of conflicts of interest.',
-          category: 'biases'
-        }
-      ];
-    } else if (content.includes('bbc.com') || content.includes('Hamas-Israel War')) {
-      console.log('Detected Hamas-Israel content');
-      items = [
-        {
-          id: 'conflict-misinfo',
-          icon: require('../../assets/analysis-icons/government.png'),
-          title: 'Conflict Misinformation',
-          description: 'False casualty numbers and fabricated incidents',
-          detailedContent: 'The content spreads unverified casualty figures, promotes debunked stories of atrocities, or presents staged incidents as authentic. This includes using old footage from other conflicts, misrepresenting civilian vs. military casualties, and amplifying unconfirmed reports without proper verification.',
-          category: 'credibility'
-        },
-        {
-          id: 'emotional-manipulation',
-          icon: require('../../assets/analysis-icons/fear.png'),
-          title: 'Emotional Manipulation',
-          description: 'Using graphic imagery to trigger outrage',
-          detailedContent: 'The content exploits human suffering through graphic images and videos designed to provoke immediate emotional responses rather than rational analysis. This includes sharing images of injured children, destroyed buildings, or grieving families to bypass critical thinking and generate support for one side.',
-          category: 'emotional'
-        },
-        {
-          id: 'selective-context',
-          icon: require('../../assets/analysis-icons/framing.png'),
-          title: 'Selective Context',
-          description: 'Omitting key background information',
-          detailedContent: 'The narrative deliberately excludes crucial context that would provide a more complete picture. This includes ignoring historical provocations, omitting details about military targets vs. civilian areas, or failing to mention the sequence of events leading to specific incidents.',
-          category: 'biases'
-        },
-        {
-          id: 'loaded-language',
-          icon: require('../../assets/analysis-icons/inflamatory.png'),
-          title: 'Loaded Language',
-          description: '"Genocide", "ethnic cleansing", "apartheid"',
-          detailedContent: 'The content employs emotionally charged terms that carry specific historical and legal meanings to describe current events. Words like "genocide" and "ethnic cleansing" are used without meeting their legal definitions, while terms like "apartheid" are applied anachronistically to inflame rather than inform.',
-          category: 'emotional'
-        },
-        {
-          id: 'false-equivalence',
-          icon: require('../../assets/analysis-icons/authority.png'),
-          title: 'False Moral Equivalence',
-          description: 'Equating terrorist acts with self-defense',
-          detailedContent: 'The content creates false moral equivalencies between targeted attacks on civilians and military responses to those attacks. This includes portraying terrorist organizations as freedom fighters or equating defensive military actions with offensive terrorism, obscuring important distinctions in international law.',
-          category: 'logical'
-        }
-      ];
-    } else if (content.includes('apnews.com') || content.includes('Anti-Gun Propaganda')) {
-      console.log('Detected Anti-Gun content');
-      items = [
-        {
-          id: 'tragedy-exploitation',
-          icon: require('../../assets/analysis-icons/covid-19.png'),
-          title: 'Tragedy Exploitation',
-          description: 'Using fresh grief to push immediate legislation',
-          detailedContent: 'The content capitalizes on mass shooting tragedies by demanding immediate policy action while emotions are high and rational debate is discouraged. This includes platforming grieving families as policy advocates, using "never again" rhetoric to shut down discussion, and framing any delay in legislation as complicity in future violence.',
-          category: 'emotional'
-        },
-        {
-          id: 'fear-mongering-guns',
-          icon: require('../../assets/analysis-icons/fear.png'),
-          title: 'Fear Mongering',
-          description: '"Your children aren\'t safe at school"',
-          detailedContent: 'The messaging amplifies parental fears by exaggerating the statistical risk of school shootings and portraying schools as war zones. This includes sensationalizing rare events, ignoring actual crime statistics, and creating anxiety that drives support for restrictive policies regardless of their effectiveness.',
-          category: 'emotional'
-        },
-        {
-          id: 'weaponized-language',
-          icon: require('../../assets/analysis-icons/inflamatory.png'),
-          title: 'Weaponized Language',
-          description: '"Assault weapons", "weapons of war"',
-          detailedContent: 'The content uses militaristic terminology to describe civilian firearms, creating false associations with battlefield weapons. Terms like "assault weapon" are used for cosmetic features rather than function, while "weapons of war" rhetoric ignores that many civilian firearms have military origins or applications.',
-          category: 'emotional'
-        },
-        {
-          id: 'statistical-manipulation',
-          icon: require('../../assets/analysis-icons/authority.png'),
-          title: 'Statistical Manipulation',
-          description: 'Inflated gun violence numbers and cherry-picking',
-          detailedContent: 'The content presents misleading statistics by including suicides in "gun violence" numbers, counting gang violence as mass shootings, or comparing countries with different demographics and crime patterns. Data is selectively presented to support predetermined conclusions while ignoring contradictory evidence.',
-          category: 'logical'
-        },
-        {
-          id: 'constitutional-gaslighting',
-          icon: require('../../assets/analysis-icons/government.png'),
-          title: 'Constitutional Gaslighting',
-          description: '"Well regulated militia" misinterpretation',
-          detailedContent: 'The content promotes outdated interpretations of the Second Amendment that have been rejected by Supreme Court precedent. This includes claiming the amendment only protects military service members, ignoring individual rights confirmed in Heller and McDonald decisions, or arguing the founders couldn\'t envision modern firearms.',
-          category: 'biases'
-        }
-      ];
-    } else {
-      console.log('No specific content detected, using fallback');
-      items = [
-        {
-          id: 'general-analysis',
-          icon: require('../../assets/analysis-icons/unknown.png'),
-          title: 'General Analysis',
-          description: 'Various propaganda techniques detected',
-          detailedContent: 'This content contains multiple propaganda techniques that require careful analysis. The messaging may include emotional appeals, selective presentation of facts, loaded language, or other persuasive techniques designed to influence opinion rather than inform. A more detailed analysis would require examination of specific claims and their supporting evidence.',
-          category: 'biases'
-        }
-      ];
-    }
-
-    // Group items by category
-    const categorizedData = {
-      biases: {
-        label: 'Biases',
-        icon: 'eye-off-outline',
-        items: items.filter(item => item.category === 'biases'),
-      },
-      emotional: {
-        label: 'Emotional Manipulation',
-        icon: 'heart-dislike-outline',
-        items: items.filter(item => item.category === 'emotional'),
-      },
-      logical: {
-        label: 'Logical Fallacies',
-        icon: 'git-branch-outline',
-        items: items.filter(item => item.category === 'logical'),
-      },
-      credibility: {
-        label: 'Source Credibility',
-        icon: 'shield-checkmark-outline',
-        items: items.filter(item => item.category === 'credibility'),
-      },
-    };
-
-    return categorizedData;
-  };
+  // Function now replaced by extracted utilities in contentDetection.ts
 
   // Simple Accordion Item Component (no VirtualizedList)
   const SimpleAccordionItem = ({ 
@@ -784,7 +535,7 @@ export function ContentAnalysisSheetV2({
             ref={scrollViewRef}
             style={styles.contentContainer}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: 280 }]}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: LAYOUT_CONFIG.ANALYSIS_CONTENT_BOTTOM_PADDING }]}
             bounces={true}
             alwaysBounceVertical={true}
             onScroll={handleScroll}
@@ -796,37 +547,15 @@ export function ContentAnalysisSheetV2({
             <>
               {/* Full Header Content that scrolls */}
               <Animated.View style={[styles.scrollableHeader, headerContainerStyle]}>
-                <Animated.Image 
-                  source={
-                    content.includes('who.int') || content.includes('COVID') || content.includes('covid') 
-                      ? require('../../assets/analysis-icons/covid-19.png')
-                      : content.includes('bbc.com') || content.includes('Hamas-Israel War')
-                      ? require('../../assets/analysis-icons/government.png')
-                      : content.includes('apnews.com') || content.includes('Anti-Gun Propaganda')
-                      ? require('../../assets/analysis-icons/anti-free-speech.png')
-                      : require('../../assets/analysis-icons/unknown.png')
-                  } 
+                <Animated.Image
+                  source={displayInfo.icon}
                   style={[styles.headingIcon, iconStyle]}
                 />
                 <Animated.Text style={[styles.headingTitle, titleStyle]}>
-                  {content.includes('who.int') || content.includes('COVID') || content.includes('covid') 
-                    ? 'COVID-19 Propaganda'
-                    : content.includes('bbc.com') || content.includes('Hamas-Israel War')
-                    ? 'Hamas-Israel War Propaganda'
-                    : content.includes('apnews.com') || content.includes('Anti-Gun Propaganda')
-                    ? 'Anti-Gun Propaganda'
-                    : 'Analysis Results'
-                  }
+                  {displayInfo.title}
                 </Animated.Text>
                 <Animated.Text style={[styles.headingDescription, descriptionStyle]}>
-                  {content.includes('who.int') || content.includes('COVID') || content.includes('covid') 
-                    ? 'Identifying misinformation and propaganda techniques\nin COVID-19 related content'
-                    : content.includes('bbc.com') || content.includes('Hamas-Israel War')
-                    ? 'Analyzing propaganda and bias in conflict-related content'
-                    : content.includes('apnews.com') || content.includes('Anti-Gun Propaganda')
-                    ? 'Detecting emotional manipulation in gun control messaging'
-                    : 'Detailed propaganda analysis of the content'
-                  }
+                  {displayInfo.description}
                 </Animated.Text>
               </Animated.View>
 
@@ -961,9 +690,7 @@ export function ContentAnalysisSheetV2({
               
               {/* Categorized Accordion Items */}
               <View style={styles.detectionsList}>
-                {(() => {
-                  const categorizedData = createAccordionData(content);
-                  return Object.entries(categorizedData).map(([categoryKey, category]) => {
+                {Object.entries(categorizedData).map(([categoryKey, category]) => {
                     if (category.items.length === 0) return null;
                     
                     return (
@@ -988,8 +715,7 @@ export function ContentAnalysisSheetV2({
                         </View>
                       </View>
                     );
-                  });
-                })()}
+                  })}
               </View>
             </View>
             </>
@@ -1075,7 +801,7 @@ const styles = StyleSheet.create({
   headingTitle: {
     fontSize: 32,
     fontFamily: fonts.serifRegular,
-    color: colors.default,
+    color: THEME_COLORS.default,
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -1103,7 +829,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontFamily: fonts.semiBold,
-    color: colors.default,
+    color: THEME_COLORS.default,
   },
   confidenceIndicator: {
     flexDirection: 'row',
@@ -1117,7 +843,7 @@ const styles = StyleSheet.create({
   narrativeDescription: {
     fontSize: 28,
     fontFamily: fonts.serifRegular,
-    color: colors.default,
+    color: THEME_COLORS.default,
     lineHeight: 36,
     marginTop: 16,
     marginBottom: 20,
@@ -1161,7 +887,7 @@ const styles = StyleSheet.create({
   compactHeaderTitle: {
     fontSize: 22,
     fontFamily: fonts.serifRegular,
-    color: colors.default,
+    color: THEME_COLORS.default,
     flex: 1,
     textAlign: 'center',
   },
@@ -1200,7 +926,7 @@ const styles = StyleSheet.create({
   detectionTitle: {
     fontSize: 16,
     fontFamily: fonts.semiBold,
-    color: colors.default,
+    color: THEME_COLORS.default,
     marginBottom: 4,
   },
   detectionDescription: {
@@ -1292,7 +1018,7 @@ const styles = StyleSheet.create({
   chatTitle: {
     fontSize: 18,
     fontFamily: fonts.semiBold,
-    color: colors.default,
+    color: THEME_COLORS.default,
   },
   chatCloseButton: {
     padding: 8,
