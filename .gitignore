@@ -83,3 +83,7 @@ coverage/
 # Temporary
 tmp/
 temp/
+nul
+
+# Windows specific temporary files
+*.tmp
