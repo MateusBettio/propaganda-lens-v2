@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, Image, Dimensions } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Image, Dimensions, Animated } from 'react-native';
 import { useTheme } from '../contexts/theme-context';
 import { Button } from './Button';
 import { fonts } from '../constants/fonts';
@@ -59,11 +59,54 @@ const placeholderItems: CarouselItem[] = [
   },
 ];
 
+// Animated Card Component with press animation
+const AnimatedPressable = ({ children, onPress, style }: any) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 8,
+    }).start();
+  };
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPressCancel={handlePressOut}
+    >
+      <Animated.View
+        style={[
+          style,
+          {
+            transform: [{ scale: scaleAnim }]
+          }
+        ]}
+      >
+        {children}
+      </Animated.View>
+    </Pressable>
+  );
+};
+
 export function Carousel({ onItemPress }: CarouselProps) {
   const { colors } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
   const styles = createStyles(colors);
-  
+
   const handleViewAnalysis = (item: CarouselItem) => {
     console.log('View analysis:', item.id);
     if (onItemPress) {
@@ -86,7 +129,7 @@ export function Carousel({ onItemPress }: CarouselProps) {
         contentContainerStyle={styles.scrollContent}
       >
         {placeholderItems.map((item) => (
-          <Pressable
+          <AnimatedPressable
             key={item.id}
             style={styles.card}
             onPress={() => handleViewAnalysis(item)}
@@ -108,7 +151,7 @@ export function Carousel({ onItemPress }: CarouselProps) {
             <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
               {item.title}
             </Text>
-          </Pressable>
+          </AnimatedPressable>
         ))}
       </ScrollView>
     </View>
