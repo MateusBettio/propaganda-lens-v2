@@ -16,6 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { fonts } from '../../constants/fonts';
 import { SharedContent } from './SharedContent';
 import { PoliticalPerspectiveCarousel, PoliticalPerspective } from './PoliticalPerspectiveCarousel';
+import { ChatInputLight } from '../Chat/ChatInputLight';
+import { ChatScreen } from '../Chat';
 import BottomSheet, { BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BlurView } from 'expo-blur';
 import Animated, {
@@ -27,13 +29,18 @@ import Animated, {
   Extrapolate,
   runOnJS,
 } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
-// Color variables
+// Color variables - Light Theme
 const colors = {
-  default: 'rgba(0, 0, 0, 0.8)',
+  default: '#1f2937', // Dark gray for text
+  light: '#6b7280', // Light gray for secondary text
+  background: '#ffffff', // White background
+  surface: '#f9fafb', // Light gray surface
+  border: '#e5e7eb', // Light border
 };
 
 
@@ -55,9 +62,9 @@ interface ContentAnalysisSheetV2Props {
   isTrendingAnalysis?: boolean;
 }
 
-export function ContentAnalysisSheetV2({ 
-  content, 
-  analysis, 
+export function ContentAnalysisSheetV2({
+  content,
+  analysis,
   isLoading = false,
   isVisible,
   onClose,
@@ -69,13 +76,22 @@ export function ContentAnalysisSheetV2({
   // Bottom sheet ref
   const bottomSheetRef = useRef<BottomSheet>(null);
   const scrollViewRef = useRef<any>(null);
-  
+
   // Narrative perspective state
   const [selectedPerspective, setSelectedPerspective] = useState<PoliticalPerspective | null>(null);
   const flipAnimation = useSharedValue(0);
-  
+
   // Accordion state
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  // Tab and Chat state
+  const [activeTab, setActiveTab] = useState<'analysis' | 'chat'>('analysis');
+  const [initialChatMessage, setInitialChatMessage] = useState<string>('');
+  const [chatMessages, setChatMessages] = useState<string[]>([]);
+  const [chatKey, setChatKey] = useState(0);
+
+  // Tab animation values
+  const tabTransition = useSharedValue(0); // 0 = analysis, 1 = chat
   
   // Scroll animation values
   const scrollY = useSharedValue(0);
@@ -85,6 +101,81 @@ export function ContentAnalysisSheetV2({
   // Bottom sheet snap points - 80% and 95% for scrolling
   const snapPoints = useMemo(() => ['80%', '95%'], []);
   
+  // Handle modal visibility changes
+  useEffect(() => {
+    if (isVisible && bottomSheetRef.current) {
+      bottomSheetRef.current.snapToIndex(0);
+    } else if (!isVisible && bottomSheetRef.current) {
+      bottomSheetRef.current.close();
+    }
+  }, [isVisible]);
+
+
+  // Chat handlers
+  const handleChatSubmit = useCallback((message: string) => {
+    console.log('Chat message submitted:', message);
+    setChatMessages(prev => [...prev, message]);
+    setInitialChatMessage(message);
+    setActiveTab('chat');
+    // Force re-mount of ChatScreen with new message
+    setChatKey(prev => prev + 1);
+  }, []);
+
+  const handleTabChange = useCallback((tab: 'analysis' | 'chat') => {
+    const targetValue = tab === 'analysis' ? 0 : 1;
+    tabTransition.value = withTiming(targetValue, {
+      duration: 300
+    });
+    setActiveTab(tab);
+  }, [tabTransition]);
+
+  // Swipe gesture handlers for tab switching
+  const analysisPanGesture = Gesture.Pan()
+    .minDistance(10)
+    .activeOffsetX([-10, 10])
+    .failOffsetY([-30, 30])
+    .onEnd((event) => {
+      const swipeThreshold = 30;
+      const velocityThreshold = 300;
+      const { translationX, velocityX, translationY } = event;
+
+      // Only handle horizontal swipes
+      if (Math.abs(translationY) > Math.abs(translationX)) {
+        return;
+      }
+
+      // From analysis tab: only allow swipe left to chat
+      if (Math.abs(translationX) > swipeThreshold || Math.abs(velocityX) > velocityThreshold) {
+        if (translationX < 0 || velocityX < 0) {
+          // Swipe left - go to chat tab
+          runOnJS(handleTabChange)('chat');
+        }
+      }
+    });
+
+  const chatPanGesture = Gesture.Pan()
+    .minDistance(10)
+    .activeOffsetX([-10, 10])
+    .failOffsetY([-30, 30])
+    .onEnd((event) => {
+      const swipeThreshold = 30;
+      const velocityThreshold = 300;
+      const { translationX, velocityX, translationY } = event;
+
+      // Only handle horizontal swipes
+      if (Math.abs(translationY) > Math.abs(translationX)) {
+        return;
+      }
+
+      // From chat tab: only allow swipe right to analysis
+      if (Math.abs(translationX) > swipeThreshold || Math.abs(velocityX) > velocityThreshold) {
+        if (translationX > 0 || velocityX > 0) {
+          // Swipe right - go to analysis tab
+          runOnJS(handleTabChange)('analysis');
+        }
+      }
+    });
+
   // Animated backdrop component
   const renderBackdrop = useCallback(
     (props: any) => {
@@ -106,9 +197,14 @@ export function ContentAnalysisSheetV2({
         ),
       }));
 
+      const handleBackdropPress = () => {
+        bottomSheetRef.current?.close();
+      };
+
       return (
         <Animated.View 
           style={[StyleSheet.absoluteFillObject, containerAnimatedStyle]}
+          pointerEvents={props.animatedIndex.value > -1 ? 'auto' : 'none'}
         >
           <AnimatedBlurView
             style={StyleSheet.absoluteFillObject}
@@ -126,7 +222,7 @@ export function ContentAnalysisSheetV2({
           <TouchableOpacity
             style={StyleSheet.absoluteFillObject}
             activeOpacity={1}
-            onPress={() => bottomSheetRef.current?.close()}
+            onPress={handleBackdropPress}
           />
         </Animated.View>
       );
@@ -137,9 +233,19 @@ export function ContentAnalysisSheetV2({
   // Handle sheet changes
   const handleSheetChanges = useCallback((index: number) => {
     if (index === -1) {
+      // Reset state when closing
+      setSelectedPerspective(null);
+      setExpandedItems(new Set());
+      scrollY.value = 0;
+      flipAnimation.value = 0;
+      tabTransition.value = 0; // Reset tab animation
+      setActiveTab('analysis');
+      setChatMessages([]);
+      setInitialChatMessage('');
+      setChatKey(0);
       onClose();
     }
-  }, [onClose]);
+  }, [onClose, scrollY, flipAnimation, tabTransition]);
 
 
   // Handle scroll event
@@ -333,141 +439,237 @@ export function ContentAnalysisSheetV2({
       transform: [{ scale }],
     };
   });
-  
-  // Create accordion data structure
+
+  // Tab transition animated styles
+  const analysisTabStyle = useAnimatedStyle(() => {
+    const translateX = interpolate(
+      tabTransition.value,
+      [0, 1],
+      [0, -100], // Slide out to the left when switching to chat
+      Extrapolate.CLAMP
+    );
+
+    const opacity = interpolate(
+      tabTransition.value,
+      [0, 0.3, 1],
+      [1, 0.3, 0],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      transform: [{ translateX }],
+      opacity,
+    };
+  });
+
+  const chatTabStyle = useAnimatedStyle(() => {
+    const translateX = interpolate(
+      tabTransition.value,
+      [0, 1],
+      [100, 0], // Slide in from the right when switching to chat
+      Extrapolate.CLAMP
+    );
+
+    const opacity = interpolate(
+      tabTransition.value,
+      [0, 0.7, 1],
+      [0, 0.3, 1],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      transform: [{ translateX }],
+      opacity,
+    };
+  });
+
+  // Create categorized accordion data structure
   const createAccordionData = (content: string) => {
     console.log('ContentAnalysisSheetV2 received content:', content);
     console.log('ContentAnalysisSheetV2 received analysis:', analysis);
     
+    type DetectionItem = {
+      id: string;
+      icon: any;
+      title: string;
+      description: string;
+      detailedContent: string;
+      category: 'biases' | 'emotional' | 'logical' | 'credibility';
+    };
+
+    let items: DetectionItem[] = [];
+    
     if (content.includes('who.int') || content.includes('COVID') || content.includes('covid')) {
       console.log('Detected COVID content');
-      return [
+      items = [
         {
           id: 'covid-misinfo',
           icon: require('../../assets/analysis-icons/covid-19.png'),
           title: 'COVID-19 Misinformation',
           description: 'Vaccine skepticism and anti-mandate rhetoric',
-          detailedContent: 'This content promotes vaccine hesitancy by questioning safety data, spreading unverified claims about side effects, and portraying public health measures as authoritarian overreach. Common tactics include cherry-picking isolated cases, misrepresenting scientific studies, and appealing to personal freedom over collective health.'
+          detailedContent: 'This content promotes vaccine hesitancy by questioning safety data, spreading unverified claims about side effects, and portraying public health measures as authoritarian overreach. Common tactics include cherry-picking isolated cases, misrepresenting scientific studies, and appealing to personal freedom over collective health.',
+          category: 'credibility'
         },
         {
           id: 'authority-appeal',
           icon: require('../../assets/analysis-icons/authority.png'),
           title: 'Appeal to Authority',
           description: 'Using "trust the science" without evidence',
-          detailedContent: 'The content uses appeal to authority fallacies by invoking scientific credibility without providing actual evidence. Phrases like "trust the science" are used as conversation stoppers, while dissenting expert voices are dismissed or marginalized. This creates an illusion of scientific consensus where none may exist.'
+          detailedContent: 'The content uses appeal to authority fallacies by invoking scientific credibility without providing actual evidence. Phrases like "trust the science" are used as conversation stoppers, while dissenting expert voices are dismissed or marginalized. This creates an illusion of scientific consensus where none may exist.',
+          category: 'logical'
         },
         {
           id: 'fear-mongering',
           icon: require('../../assets/analysis-icons/fear.png'),
           title: 'Fear Mongering',
           description: 'Exaggerating dangers to influence behavior',
-          detailedContent: 'Fear-based messaging amplifies worst-case scenarios to drive compliance with health measures. This includes highlighting rare adverse events, using apocalyptic language about virus variants, and creating anxiety about social consequences of non-compliance. The goal is emotional manipulation rather than rational persuasion.'
+          detailedContent: 'Fear-based messaging amplifies worst-case scenarios to drive compliance with health measures. This includes highlighting rare adverse events, using apocalyptic language about virus variants, and creating anxiety about social consequences of non-compliance. The goal is emotional manipulation rather than rational persuasion.',
+          category: 'emotional'
         },
         {
           id: 'govt-narrative',
           icon: require('../../assets/analysis-icons/government.png'),
           title: 'Government Narrative',
           description: 'Promoting official health policy positions',
-          detailedContent: 'The content aligns closely with government health policies without acknowledging potential conflicts of interest or alternative viewpoints. Official statements are presented as unquestionable truth, and policy changes are framed as "following the science" rather than political or economic decisions.'
+          detailedContent: 'The content aligns closely with government health policies without acknowledging potential conflicts of interest or alternative viewpoints. Official statements are presented as unquestionable truth, and policy changes are framed as "following the science" rather than political or economic decisions.',
+          category: 'biases'
         },
         {
           id: 'pharma-influence',
           icon: require('../../assets/analysis-icons/pharma.png'),
           title: 'Pharmaceutical Influence',
           description: 'Potential industry-backed messaging',
-          detailedContent: 'The messaging shows potential pharmaceutical industry influence through uncritical promotion of medical interventions, downplaying of financial incentives, and exclusion of non-pharmaceutical solutions. Industry-funded studies are presented without disclosure of conflicts of interest.'
+          detailedContent: 'The messaging shows potential pharmaceutical industry influence through uncritical promotion of medical interventions, downplaying of financial incentives, and exclusion of non-pharmaceutical solutions. Industry-funded studies are presented without disclosure of conflicts of interest.',
+          category: 'biases'
         }
       ];
     } else if (content.includes('bbc.com') || content.includes('Hamas-Israel War')) {
       console.log('Detected Hamas-Israel content');
-      return [
+      items = [
         {
           id: 'conflict-misinfo',
           icon: require('../../assets/analysis-icons/government.png'),
           title: 'Conflict Misinformation',
           description: 'False casualty numbers and fabricated incidents',
-          detailedContent: 'The content spreads unverified casualty figures, promotes debunked stories of atrocities, or presents staged incidents as authentic. This includes using old footage from other conflicts, misrepresenting civilian vs. military casualties, and amplifying unconfirmed reports without proper verification.'
+          detailedContent: 'The content spreads unverified casualty figures, promotes debunked stories of atrocities, or presents staged incidents as authentic. This includes using old footage from other conflicts, misrepresenting civilian vs. military casualties, and amplifying unconfirmed reports without proper verification.',
+          category: 'credibility'
         },
         {
           id: 'emotional-manipulation',
           icon: require('../../assets/analysis-icons/fear.png'),
           title: 'Emotional Manipulation',
           description: 'Using graphic imagery to trigger outrage',
-          detailedContent: 'The content exploits human suffering through graphic images and videos designed to provoke immediate emotional responses rather than rational analysis. This includes sharing images of injured children, destroyed buildings, or grieving families to bypass critical thinking and generate support for one side.'
+          detailedContent: 'The content exploits human suffering through graphic images and videos designed to provoke immediate emotional responses rather than rational analysis. This includes sharing images of injured children, destroyed buildings, or grieving families to bypass critical thinking and generate support for one side.',
+          category: 'emotional'
         },
         {
           id: 'selective-context',
           icon: require('../../assets/analysis-icons/framing.png'),
           title: 'Selective Context',
           description: 'Omitting key background information',
-          detailedContent: 'The narrative deliberately excludes crucial context that would provide a more complete picture. This includes ignoring historical provocations, omitting details about military targets vs. civilian areas, or failing to mention the sequence of events leading to specific incidents.'
+          detailedContent: 'The narrative deliberately excludes crucial context that would provide a more complete picture. This includes ignoring historical provocations, omitting details about military targets vs. civilian areas, or failing to mention the sequence of events leading to specific incidents.',
+          category: 'biases'
         },
         {
           id: 'loaded-language',
           icon: require('../../assets/analysis-icons/inflamatory.png'),
           title: 'Loaded Language',
           description: '"Genocide", "ethnic cleansing", "apartheid"',
-          detailedContent: 'The content employs emotionally charged terms that carry specific historical and legal meanings to describe current events. Words like "genocide" and "ethnic cleansing" are used without meeting their legal definitions, while terms like "apartheid" are applied anachronistically to inflame rather than inform.'
+          detailedContent: 'The content employs emotionally charged terms that carry specific historical and legal meanings to describe current events. Words like "genocide" and "ethnic cleansing" are used without meeting their legal definitions, while terms like "apartheid" are applied anachronistically to inflame rather than inform.',
+          category: 'emotional'
         },
         {
           id: 'false-equivalence',
           icon: require('../../assets/analysis-icons/authority.png'),
           title: 'False Moral Equivalence',
           description: 'Equating terrorist acts with self-defense',
-          detailedContent: 'The content creates false moral equivalencies between targeted attacks on civilians and military responses to those attacks. This includes portraying terrorist organizations as freedom fighters or equating defensive military actions with offensive terrorism, obscuring important distinctions in international law.'
+          detailedContent: 'The content creates false moral equivalencies between targeted attacks on civilians and military responses to those attacks. This includes portraying terrorist organizations as freedom fighters or equating defensive military actions with offensive terrorism, obscuring important distinctions in international law.',
+          category: 'logical'
         }
       ];
     } else if (content.includes('apnews.com') || content.includes('Anti-Gun Propaganda')) {
       console.log('Detected Anti-Gun content');
-      return [
+      items = [
         {
           id: 'tragedy-exploitation',
           icon: require('../../assets/analysis-icons/covid-19.png'),
           title: 'Tragedy Exploitation',
           description: 'Using fresh grief to push immediate legislation',
-          detailedContent: 'The content capitalizes on mass shooting tragedies by demanding immediate policy action while emotions are high and rational debate is discouraged. This includes platforming grieving families as policy advocates, using "never again" rhetoric to shut down discussion, and framing any delay in legislation as complicity in future violence.'
+          detailedContent: 'The content capitalizes on mass shooting tragedies by demanding immediate policy action while emotions are high and rational debate is discouraged. This includes platforming grieving families as policy advocates, using "never again" rhetoric to shut down discussion, and framing any delay in legislation as complicity in future violence.',
+          category: 'emotional'
         },
         {
           id: 'fear-mongering-guns',
           icon: require('../../assets/analysis-icons/fear.png'),
           title: 'Fear Mongering',
           description: '"Your children aren\'t safe at school"',
-          detailedContent: 'The messaging amplifies parental fears by exaggerating the statistical risk of school shootings and portraying schools as war zones. This includes sensationalizing rare events, ignoring actual crime statistics, and creating anxiety that drives support for restrictive policies regardless of their effectiveness.'
+          detailedContent: 'The messaging amplifies parental fears by exaggerating the statistical risk of school shootings and portraying schools as war zones. This includes sensationalizing rare events, ignoring actual crime statistics, and creating anxiety that drives support for restrictive policies regardless of their effectiveness.',
+          category: 'emotional'
         },
         {
           id: 'weaponized-language',
           icon: require('../../assets/analysis-icons/inflamatory.png'),
           title: 'Weaponized Language',
           description: '"Assault weapons", "weapons of war"',
-          detailedContent: 'The content uses militaristic terminology to describe civilian firearms, creating false associations with battlefield weapons. Terms like "assault weapon" are used for cosmetic features rather than function, while "weapons of war" rhetoric ignores that many civilian firearms have military origins or applications.'
+          detailedContent: 'The content uses militaristic terminology to describe civilian firearms, creating false associations with battlefield weapons. Terms like "assault weapon" are used for cosmetic features rather than function, while "weapons of war" rhetoric ignores that many civilian firearms have military origins or applications.',
+          category: 'emotional'
         },
         {
           id: 'statistical-manipulation',
           icon: require('../../assets/analysis-icons/authority.png'),
           title: 'Statistical Manipulation',
           description: 'Inflated gun violence numbers and cherry-picking',
-          detailedContent: 'The content presents misleading statistics by including suicides in "gun violence" numbers, counting gang violence as mass shootings, or comparing countries with different demographics and crime patterns. Data is selectively presented to support predetermined conclusions while ignoring contradictory evidence.'
+          detailedContent: 'The content presents misleading statistics by including suicides in "gun violence" numbers, counting gang violence as mass shootings, or comparing countries with different demographics and crime patterns. Data is selectively presented to support predetermined conclusions while ignoring contradictory evidence.',
+          category: 'logical'
         },
         {
           id: 'constitutional-gaslighting',
           icon: require('../../assets/analysis-icons/government.png'),
           title: 'Constitutional Gaslighting',
           description: '"Well regulated militia" misinterpretation',
-          detailedContent: 'The content promotes outdated interpretations of the Second Amendment that have been rejected by Supreme Court precedent. This includes claiming the amendment only protects military service members, ignoring individual rights confirmed in Heller and McDonald decisions, or arguing the founders couldn\'t envision modern firearms.'
+          detailedContent: 'The content promotes outdated interpretations of the Second Amendment that have been rejected by Supreme Court precedent. This includes claiming the amendment only protects military service members, ignoring individual rights confirmed in Heller and McDonald decisions, or arguing the founders couldn\'t envision modern firearms.',
+          category: 'biases'
         }
       ];
     } else {
       console.log('No specific content detected, using fallback');
-      return [
+      items = [
         {
           id: 'general-analysis',
           icon: require('../../assets/analysis-icons/unknown.png'),
           title: 'General Analysis',
           description: 'Various propaganda techniques detected',
-          detailedContent: 'This content contains multiple propaganda techniques that require careful analysis. The messaging may include emotional appeals, selective presentation of facts, loaded language, or other persuasive techniques designed to influence opinion rather than inform. A more detailed analysis would require examination of specific claims and their supporting evidence.'
+          detailedContent: 'This content contains multiple propaganda techniques that require careful analysis. The messaging may include emotional appeals, selective presentation of facts, loaded language, or other persuasive techniques designed to influence opinion rather than inform. A more detailed analysis would require examination of specific claims and their supporting evidence.',
+          category: 'biases'
         }
       ];
     }
+
+    // Group items by category
+    const categorizedData = {
+      biases: {
+        label: 'Biases',
+        icon: 'eye-off-outline',
+        items: items.filter(item => item.category === 'biases'),
+      },
+      emotional: {
+        label: 'Emotional Manipulation',
+        icon: 'heart-dislike-outline',
+        items: items.filter(item => item.category === 'emotional'),
+      },
+      logical: {
+        label: 'Logical Fallacies',
+        icon: 'git-branch-outline',
+        items: items.filter(item => item.category === 'logical'),
+      },
+      credibility: {
+        label: 'Source Credibility',
+        icon: 'shield-checkmark-outline',
+        items: items.filter(item => item.category === 'credibility'),
+      },
+    };
+
+    return categorizedData;
   };
 
   // Simple Accordion Item Component (no VirtualizedList)
@@ -523,7 +725,7 @@ export function ContentAnalysisSheetV2({
   }
 
   return (
-    <View style={StyleSheet.absoluteFillObject} pointerEvents="auto">
+    <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
       <BottomSheet
         ref={bottomSheetRef}
         index={0}
@@ -540,46 +742,54 @@ export function ContentAnalysisSheetV2({
         enableContentPanningGesture={true}
         enableHandlePanningGesture={true}
       >
-      {/* Fixed Compact Header - appears on scroll */}
-      <Animated.View style={[styles.fixedCompactHeader, compactHeaderStyle]} pointerEvents="auto">
-        <Animated.View style={[styles.compactHeaderContent, buttonsStyle]}>
-          <TouchableOpacity 
-            style={styles.compactHeaderButton}
-            onPress={handleScrollToTop}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="arrow-back" size={22} color="#000000" />
-          </TouchableOpacity>
-          <Text style={styles.compactHeaderTitle}>
-            {content.includes('who.int') || content.includes('COVID') || content.includes('covid') 
-              ? 'COVID-19 Propaganda'
-              : content.includes('bbc.com') || content.includes('Hamas-Israel War')
-              ? 'Hamas-Israel War Propaganda'
-              : content.includes('apnews.com') || content.includes('Anti-Gun Propaganda')
-              ? 'Anti-Gun Propaganda'
-              : 'Analysis Results'
-            }
+      {/* Tab Navigation at the top */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === 'analysis' && styles.tabButtonActive]}
+          onPress={() => handleTabChange('analysis')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.tabText, activeTab === 'analysis' && styles.tabTextActive]}>
+            Analysis
           </Text>
-          <TouchableOpacity 
-            style={styles.compactHeaderButton}
-            onPress={handleShare}
-            activeOpacity={0.7}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === 'chat' && styles.tabButtonActive]}
+          onPress={() => handleTabChange('chat')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.tabText, activeTab === 'chat' && styles.tabTextActive]}>
+            Chat
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Content Container with Tab Animation */}
+      <View style={{ flex: 1, position: 'relative' }}>
+        {/* Analysis Tab Content */}
+        <GestureDetector gesture={analysisPanGesture}>
+          <Animated.View style={[
+            {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: activeTab === 'analysis' ? 1 : 0
+            },
+            analysisTabStyle
+          ]}>
+            <BottomSheetScrollView
+            ref={scrollViewRef}
+            style={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: 280 }]}
+            bounces={true}
+            alwaysBounceVertical={true}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
           >
-            <Ionicons name="share-social-outline" size={22} color="#000000" />
-          </TouchableOpacity>
-        </Animated.View>
-      </Animated.View>
-      
-      <BottomSheetScrollView 
-        ref={scrollViewRef}
-        style={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        bounces={true}
-        alwaysBounceVertical={true}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-      >
           {isLoading ? (
             <Text style={styles.loadingText}>Analyzing content...</Text>
           ) : (
@@ -749,21 +959,84 @@ export function ContentAnalysisSheetV2({
                 <Text style={styles.cardTitle}>What we detected</Text>
               </View>
               
-              {/* Simple Accordion Items */}
+              {/* Categorized Accordion Items */}
               <View style={styles.detectionsList}>
-                {createAccordionData(content).map((item) => (
-                  <SimpleAccordionItem
-                    key={item.id}
-                    item={item}
-                    isExpanded={expandedItems.has(item.id)}
-                    onToggle={() => toggleAccordionItem(item.id)}
-                  />
-                ))}
+                {(() => {
+                  const categorizedData = createAccordionData(content);
+                  return Object.entries(categorizedData).map(([categoryKey, category]) => {
+                    if (category.items.length === 0) return null;
+                    
+                    return (
+                      <View key={categoryKey} style={styles.categorySection}>
+                        <View style={styles.categoryHeader}>
+                          <Ionicons name={category.icon as any} size={20} color="rgba(0, 0, 0, 0.6)" />
+                          <Text style={styles.categoryTitle}>{category.label}</Text>
+                          <View style={styles.countBadge}>
+                            <Text style={styles.countText}>{category.items.length}</Text>
+                          </View>
+                        </View>
+                        
+                        <View style={styles.categoryItems}>
+                          {category.items.map((item) => (
+                            <SimpleAccordionItem
+                              key={item.id}
+                              item={item}
+                              isExpanded={expandedItems.has(item.id)}
+                              onToggle={() => toggleAccordionItem(item.id)}
+                            />
+                          ))}
+                        </View>
+                      </View>
+                    );
+                  });
+                })()}
               </View>
             </View>
             </>
           )}
-      </BottomSheetScrollView>
+            </BottomSheetScrollView>
+          </Animated.View>
+        </GestureDetector>
+
+        {/* Chat Tab Content */}
+        <GestureDetector gesture={chatPanGesture}>
+          <Animated.View style={[
+            {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: activeTab === 'chat' ? 1 : 0
+            },
+            chatTabStyle
+          ]}>
+            <View style={styles.chatContentWrapper}>
+              <ChatScreen
+                key={`chat-${chatKey}`}
+                aiApiKey={process.env.EXPO_PUBLIC_OPENAI_API_KEY}
+                aiModel="gpt-3.5-turbo"
+                enableImages={true}
+                initialUserMessage={initialChatMessage ? initialChatMessage : undefined}
+                onSendMessage={(message) => {
+                  console.log('Analysis chat message sent:', message);
+                  setChatMessages(prev => [...prev, message]);
+                }}
+              />
+            </View>
+          </Animated.View>
+        </GestureDetector>
+      </View>
+
+      {/* Chat Input - Only visible in analysis tab */}
+      {activeTab === 'analysis' && (
+        <View style={styles.fixedChatInputContainer}>
+          <ChatInputLight
+            onSubmit={handleChatSubmit}
+            placeholder="Ask about this content..."
+          />
+        </View>
+      )}
       </BottomSheet>
     </View>
   );
@@ -781,6 +1054,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
+    marginTop: 60,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -813,13 +1087,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   insideCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     borderRadius: 20,
     marginTop: 24,
     padding: 30,
     width: '100%',
-    borderWidth: 0.5,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -941,15 +1215,152 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   accordionExpanded: {
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: 12,
     padding: 16,
     marginVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   accordionExpandedText: {
     fontSize: 14,
     fontFamily: fonts.regular,
     color: 'rgba(0, 0, 0, 0.8)',
     lineHeight: 22,
+  },
+  categorySection: {
+    marginBottom: 20,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  categoryTitle: {
+    fontSize: 15,
+    fontFamily: fonts.semiBold,
+    color: 'rgba(0, 0, 0, 0.7)',
+    flex: 1,
+  },
+  countBadge: {
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  countText: {
+    fontSize: 13,
+    fontFamily: fonts.semiBold,
+    color: 'rgba(0, 0, 0, 0.6)',
+  },
+  categoryItems: {
+    paddingLeft: 28,
+  },
+  // Chat styles
+  fixedChatInputContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 120,
+  },
+  chatBottomSheetBackground: {
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    backgroundColor: '#FFFFFF',
+  },
+  chatHandleIndicator: {
+    backgroundColor: '#d0d0d0',
+    width: 40,
+    height: 4,
+  },
+  chatContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  chatHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  chatTitle: {
+    fontSize: 18,
+    fontFamily: fonts.semiBold,
+    color: colors.default,
+  },
+  chatCloseButton: {
+    padding: 8,
+  },
+  chatContent: {
+    flex: 1,
+    marginTop: 60,
+    paddingBottom: 0,
+    backgroundColor: 'transparent',
+  },
+  chatContentWrapper: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
+    bottom: 100,
+    backgroundColor: 'transparent',
+  },
+  chatPlaceholder: {
+    fontSize: 16,
+    fontFamily: fonts.regular,
+    color: 'rgba(0, 0, 0, 0.6)',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  tabContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    backgroundColor: 'transparent',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+    height: 60,
+    paddingHorizontal: 20,
+    zIndex: 200,
+    elevation: 200,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+  },
+  tabButtonActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.6)',
+    marginBottom: -1,
+  },
+  tabText: {
+    fontSize: 16,
+    fontFamily: fonts.semiBold,
+    color: 'rgba(0, 0, 0, 0.4)',
+  },
+  tabTextActive: {
+    color: 'rgba(0, 0, 0, 0.8)',
+  },
+  chatInnerContainer: {
+    flex: 1,
+    paddingBottom: 200, // Space for input at bottom
+  },
+  chatMessagesArea: {
+    flex: 1,
+  },
+  chatInputInChatTab: {
+    bottom: 0,
+    backgroundColor: 'transparent',
   },
 });
