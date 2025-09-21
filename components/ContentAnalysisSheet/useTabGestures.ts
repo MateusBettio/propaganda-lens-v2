@@ -28,12 +28,22 @@ export function useTabGestures({ onTabChange }: UseTabGesturesProps) {
     return Gesture.Pan()
       .minDistance(ANIMATION_CONFIG.MIN_DISTANCE)
       .activeOffsetX([-ANIMATION_CONFIG.ACTIVE_OFFSET_X, ANIMATION_CONFIG.ACTIVE_OFFSET_X])
-      .failOffsetY([-ANIMATION_CONFIG.FAIL_OFFSET_Y, ANIMATION_CONFIG.FAIL_OFFSET_Y])
+      // Allow simultaneous with vertical scrolling
+      .simultaneousWithExternalGesture()
       .onEnd((event) => {
         const { translationX, velocityX, translationY } = event;
 
-        // Only handle horizontal swipes
-        if (Math.abs(translationY) > Math.abs(translationX)) {
+        // Only handle horizontal swipes with stricter criteria
+        const horizontalDistance = Math.abs(translationX);
+        const verticalDistance = Math.abs(translationY);
+
+        // Require horizontal movement to be significantly larger than vertical
+        // and meet minimum horizontal distance threshold
+        const isHorizontalGesture =
+          horizontalDistance > Math.max(verticalDistance * 2, 40) &&
+          horizontalDistance > ANIMATION_CONFIG.SWIPE_THRESHOLD;
+
+        if (!isHorizontalGesture) {
           return;
         }
 

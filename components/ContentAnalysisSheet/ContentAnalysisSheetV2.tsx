@@ -518,20 +518,19 @@ export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
 
       {/* Content Container with Tab Animation */}
       <View style={{ flex: 1, position: 'relative' }}>
-        {/* Analysis Tab Content */}
-        <GestureDetector gesture={analysisPanGesture}>
-          <Animated.View style={[
-            {
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: activeTab === 'analysis' ? 1 : 0
-            },
-            analysisTabStyle
-          ]}>
-            <BottomSheetScrollView
+        {/* Analysis Tab Content - No gesture wrapper on ScrollView */}
+        <Animated.View style={[
+          {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: activeTab === 'analysis' ? 1 : 0
+          },
+          analysisTabStyle
+        ]}>
+          <BottomSheetScrollView
             ref={scrollViewRef}
             style={styles.contentContainer}
             showsVerticalScrollIndicator={false}
@@ -720,24 +719,22 @@ export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
             </View>
             </>
           )}
-            </BottomSheetScrollView>
-          </Animated.View>
-        </GestureDetector>
+          </BottomSheetScrollView>
+        </Animated.View>
 
-        {/* Chat Tab Content */}
-        <GestureDetector gesture={chatPanGesture}>
-          <Animated.View style={[
-            {
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: activeTab === 'chat' ? 1 : 0
-            },
-            chatTabStyle
-          ]}>
-            <View style={styles.chatContentWrapper}>
+        {/* Chat Tab Content - No gesture wrapper */}
+        <Animated.View style={[
+          {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: activeTab === 'chat' ? 1 : 0
+          },
+          chatTabStyle
+        ]}>
+          <View style={styles.chatContentWrapper}>
               <ChatScreen
                 key={`chat-${chatKey}`}
                 aiApiKey={process.env.EXPO_PUBLIC_OPENAI_API_KEY}
@@ -749,9 +746,8 @@ export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
                   setChatMessages(prev => [...prev, message]);
                 }}
               />
-            </View>
-          </Animated.View>
-        </GestureDetector>
+          </View>
+        </Animated.View>
       </View>
 
       {/* Chat Input - Only visible in analysis tab */}
