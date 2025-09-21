@@ -42,9 +42,11 @@ import React, {
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   AccessibilityInfo,
-  Platform
+  Platform,
+  ImageSourcePropType
 } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { useCreditsCounter } from './useCreditsCounter';
@@ -52,7 +54,13 @@ import { fonts } from '../../constants/fonts';
 
 export type CounterRingProps = {
   /** Left label, e.g., "Free Analysis" */
-  label: string;
+  label?: string;
+  /** User's first name to display */
+  userName?: string;
+  /** User's level to display */
+  userLevel?: string;
+  /** User's avatar image */
+  avatarSource?: ImageSourcePropType;
   /** Current remaining credits to display (controlled mode) */
   value?: number;
   /** Starting credits for uncontrolled mode; default 10 */
@@ -68,6 +76,8 @@ export type CounterRingProps = {
   progressColor?: string;  // default rgba(255,255,255,0.92) - now represents remaining
   textColor?: string;      // default #FFFFFF
   labelColor?: string;     // default #C9C9C9
+  userNameColor?: string;  // default #FFFFFF
+  userLevelColor?: string; // default rgba(255,255,255,0.75)
   /** Animate ring changes; default true */
   animate?: boolean;
   /** Clamp visual progress to [0..100%]; default true */
@@ -93,6 +103,9 @@ export type CounterRingHandle = {
 const CounterRing = forwardRef<CounterRingHandle, CounterRingProps>(
   ({
     label,
+    userName,
+    userLevel,
+    avatarSource,
     value: controlledValue,
     defaultValue = 10,
     max = 10,
@@ -102,6 +115,8 @@ const CounterRing = forwardRef<CounterRingHandle, CounterRingProps>(
     progressColor = 'rgba(255,255,255,0.92)',
     textColor = '#FFFFFF',
     labelColor = '#C9C9C9',
+    userNameColor = '#FFFFFF',
+    userLevelColor = 'rgba(255,255,255,0.75)',
     animate = true,
     clamp = true,
     ariaLabel,
@@ -207,7 +222,7 @@ const CounterRing = forwardRef<CounterRingHandle, CounterRingProps>(
       };
 
       animationRef.current = requestAnimationFrame(tick) as any;
-    }, [animate, reducedMotion, animatedProgress]);
+    }, [animate, reducedMotion]);
 
     // React to value changes
     useEffect(() => {
@@ -256,7 +271,7 @@ const CounterRing = forwardRef<CounterRingHandle, CounterRingProps>(
     }), [isControlled, controlledValue, max, onChange, onExhausted, uncontrolledState]);
 
     // Accessibility
-    const accessibilityLabel = ariaLabel || `${label}: ${currentValue} of ${max} remaining`;
+    const accessibilityLabel = ariaLabel || `${userName || label || 'Counter'}: ${currentValue} of ${max} remaining`;
     // Inverted: strokeDashoffset starts at 0 (full circle) and increases as credits decrease
     const strokeDashoffset = circumference * (1 - animatedProgress);
 
@@ -279,13 +294,36 @@ const CounterRing = forwardRef<CounterRingHandle, CounterRingProps>(
           </output>
         )}
         
-        <Text 
-          style={[styles.label, { color: labelColor }]}
-          numberOfLines={2}
-          ellipsizeMode="tail"
-        >
-          {label.replace(' ', '\n')}
-        </Text>
+        <View style={styles.labelContainer}>
+          {userName ? (
+            <>
+              <Text 
+                style={[styles.userName, { color: userNameColor }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {userName}
+              </Text>
+              {userLevel && (
+                <Text 
+                  style={[styles.userLevel, { color: userLevelColor }]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {userLevel}
+                </Text>
+              )}
+            </>
+          ) : (
+            <Text 
+              style={[styles.label, { color: labelColor }]}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
+              {label?.replace(' ', '\n') || ''}
+            </Text>
+          )}
+        </View>
 
         <View style={[styles.ringContainer, { width: size, height: size }]}>
           <Svg width={size} height={size} style={styles.svg}>
@@ -315,17 +353,17 @@ const CounterRing = forwardRef<CounterRingHandle, CounterRingProps>(
             </G>
           </Svg>
           
-          <View style={[styles.numberContainer, { width: size, height: size }]}>
-            <Text 
-              style={[
-                styles.number, 
-                { color: textColor, fontSize }
-              ]}
-              accessibilityRole={Platform.OS !== 'web' ? 'text' : undefined}
-              accessibilityLabel={Platform.OS !== 'web' ? accessibilityLabel : undefined}
-            >
-              {displayValue}
-            </Text>
+          <View style={[styles.avatarContainer, { width: size, height: size }]}>
+            {avatarSource ? (
+              <Image 
+                source={avatarSource}
+                style={[styles.avatar, { width: size - 12, height: size - 12, borderRadius: (size - 12) / 2 }]}
+                accessibilityRole={Platform.OS !== 'web' ? 'image' : undefined}
+                accessibilityLabel={Platform.OS !== 'web' ? `${userName || 'User'} avatar` : undefined}
+              />
+            ) : (
+              <View style={[styles.avatarPlaceholder, { width: size - 12, height: size - 12, borderRadius: (size - 12) / 2 }]} />
+            )}
           </View>
         </View>
       </View>
@@ -338,30 +376,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  labelContainer: {
+    marginRight: 12,
+    alignItems: 'flex-end',
+  },
   label: {
     fontSize: 11,
     fontFamily: fonts.medium,
     lineHeight: 13,
     textAlign: 'center',
-    marginRight: 12,
+  },
+  userName: {
+    fontSize: 12,
+    fontFamily: fonts.semiBold,
+    lineHeight: 14,
+    textAlign: 'right',
+    marginBottom: 2,
+  },
+  userLevel: {
+    fontSize: 10,
+    fontFamily: fonts.medium,
+    lineHeight: 12,
+    textAlign: 'right',
+  },
+  avatarContainer: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatar: {
+    resizeMode: 'cover',
+  },
+  avatarPlaceholder: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   ringContainer: {
     position: 'relative',
   },
   svg: {
     position: 'absolute',
-  },
-  numberContainer: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  number: {
-    fontFamily: fonts.semiBold,
-    textAlign: 'center',
-    ...(Platform.OS === 'web' && {
-      letterSpacing: -0.5,
-    }),
   },
 });
 

@@ -3,10 +3,13 @@ import { View, Text, ScrollView, StyleSheet, Pressable, Image, Dimensions } from
 import { useTheme } from '../contexts/theme-context';
 import { Button } from './Button';
 import { fonts } from '../constants/fonts';
+import { Badge } from './Badge';
+import { AnalysisIcon } from './AnalysisIcon';
 
 const { width: screenWidth } = Dimensions.get('window');
-const CARD_WIDTH = screenWidth * 0.8;
-const CARD_MARGIN = 10;
+const CARD_WIDTH = screenWidth * 0.5;
+const CARD_HEIGHT = CARD_WIDTH * 1.4;
+const CARD_MARGIN = 20;
 
 export interface CarouselItem {
   id: string;
@@ -15,6 +18,8 @@ export interface CarouselItem {
   description: string;
   timestamp: string;
   url: string;
+  propagandaType?: string;
+  analysisIconType?: 'covid-19' | 'war-complex' | 'gun-control' | 'chinese-propaganda' | 'islam-propaganda' | 'nazi-propaganda' | 'russian-propaganda' | 'warming';
 }
 
 interface CarouselProps {
@@ -29,6 +34,8 @@ const placeholderItems: CarouselItem[] = [
     description: 'Detected multiple propaganda techniques including fear appeals and false authority in social media posts spreading COVID-19 conspiracy theories',
     timestamp: '2 hours ago',
     url: 'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/advice-for-public/myth-busters',
+    propagandaType: 'COVID-19 Propaganda',
+    analysisIconType: 'covid-19',
   },
   {
     id: '2', 
@@ -37,6 +44,8 @@ const placeholderItems: CarouselItem[] = [
     description: 'Detected propaganda techniques including emotional manipulation and selective framing in social media posts about the conflict',
     timestamp: '5 hours ago',
     url: 'https://www.bbc.com/news/world-middle-east-67039975',
+    propagandaType: 'War Propaganda',
+    analysisIconType: 'war-complex',
   },
   {
     id: '3',
@@ -45,6 +54,8 @@ const placeholderItems: CarouselItem[] = [
     description: 'Identified fear appeals and loaded language in media coverage following mass shooting incident',
     timestamp: '1 day ago',
     url: 'https://apnews.com/hub/gun-violence',
+    propagandaType: 'Gun Control Propaganda',
+    analysisIconType: 'gun-control',
   },
 ];
 
@@ -77,28 +88,26 @@ export function Carousel({ onItemPress }: CarouselProps) {
         {placeholderItems.map((item) => (
           <Pressable
             key={item.id}
-            style={[styles.card, { backgroundColor: colors.card }]}
+            style={styles.card}
             onPress={() => handleViewAnalysis(item)}
           >
-            <Image source={{ uri: item.image }} style={styles.image} />
-            <View style={styles.cardContent}>
-              <Text style={[styles.timestamp, { color: colors.textSecondary }]}>
-                {item.timestamp}
-              </Text>
-              <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
-                {item.title}
-              </Text>
-              <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={2}>
-                {item.description}
-              </Text>
-              <Button 
-                variant="primary"
-                size="medium"
-                title="View Analysis"
-                onPress={() => handleViewAnalysis(item)}
-                style={styles.button}
-              />
+            <View style={styles.imageContainer}>
+              <Image source={{ uri: item.image }} style={styles.image} />
+              {item.propagandaType && item.analysisIconType && (
+                <Badge
+                  text={item.propagandaType}
+                  icon={<AnalysisIcon type={item.analysisIconType} size={14} />}
+                  theme="light"
+                  style={styles.badge}
+                />
+              )}
             </View>
+            <Text style={[styles.timestamp, { color: colors.textSecondary }]}>
+              {item.timestamp}
+            </Text>
+            <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
+              {item.title}
+            </Text>
           </Pressable>
         ))}
       </ScrollView>
@@ -125,16 +134,19 @@ function createStyles(colors: any) {
     width: CARD_WIDTH,
     marginLeft: 0,
     marginRight: CARD_MARGIN,
-    borderRadius: 16,
+  },
+  imageContainer: {
+    width: '100%',
+    height: CARD_HEIGHT,
+    borderRadius: 20,
     overflow: 'hidden',
+    marginBottom: 12,
+    position: 'relative',
   },
   image: {
     width: '100%',
-    height: 180,
+    height: '100%',
     backgroundColor: colors.border,
-  },
-  cardContent: {
-    padding: 16,
   },
   timestamp: {
     fontSize: 12,
@@ -143,15 +155,13 @@ function createStyles(colors: any) {
   title: {
     fontSize: 18,
     fontFamily: fonts.semiBold,
-    marginBottom: 8,
+    marginBottom: 6,
+    lineHeight: 24,
   },
-  description: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  button: {
-    alignSelf: 'flex-start',
+  badge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
   },
   });
 }

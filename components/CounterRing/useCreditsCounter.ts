@@ -134,7 +134,7 @@ export function useCreditsCounter(
     } else if (value > min) {
       hasCalledExhausted.current = false;
     }
-  }, [value, isLoaded, min, onChange, onExhausted]);
+  }, [value, isLoaded, min]);
 
   const decrement = useCallback((step = 1) => {
     setValue(prev => {

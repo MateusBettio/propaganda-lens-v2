@@ -4,6 +4,7 @@ import * as Linking from 'expo-linking';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from '../contexts/theme-context';
 import { Platform } from 'react-native';
+import '../utils/dayjs-config';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
 import { 
@@ -47,6 +48,16 @@ function AppStack() {
         name="index" 
         options={{ 
           headerShown: false,
+        }} 
+      />
+      <Stack.Screen 
+        name="chat-demo" 
+        options={{ 
+          title: 'Chat Demo',
+          headerStyle: {
+            backgroundColor: colors.surface,
+          },
+          headerTintColor: colors.text,
         }} 
       />
     </Stack>

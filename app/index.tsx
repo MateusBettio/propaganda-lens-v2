@@ -7,6 +7,7 @@ import { useTheme } from '../contexts/theme-context';
 import { Logo } from '../components/logo';
 import { InputSection } from '../components/InputSection';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { ChatEntry, ChatInput } from '../components/Chat';
 import { AnalysisSkeleton } from '../components/AnalysisSkeleton';
 import { AnalysisResults } from '../components/analysis-results';
 import { Carousel } from '../components/Carousel';
@@ -252,7 +253,9 @@ export default function HomeScreen() {
         <View style={styles.counterContainer}>
           <CounterRing 
             ref={counterRef}
-            label="Free Analysis"
+            userName="John"
+            userLevel="Level 3"
+            avatarSource={{ uri: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face' }}
             defaultValue={10000}
             max={10000}
             persistenceKey="free_analysis_credits_v4"
@@ -278,7 +281,7 @@ export default function HomeScreen() {
         style={styles.mainContentScrollView}
         contentContainerStyle={[
           styles.mainContentContainer,
-          { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 100 : 80 }
+          { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 120 : 100 }
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -336,11 +339,11 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      {/* Bottom Input Panel - Absolute positioning above keyboard */}
-      <View 
+      {/* Bottom Chat Input Panel - Absolute positioning above keyboard */}
+      <View
         style={[
-          styles.bottomInputPanel, 
-          { 
+          styles.bottomChatPanel,
+          {
             backgroundColor: colors.background,
             position: 'absolute',
             bottom: keyboardHeight > 0 ? keyboardHeight : 0,
@@ -350,12 +353,19 @@ export default function HomeScreen() {
           }
         ]}
       >
-        <InputSection 
-          onSubmit={handleSubmit}
-          loading={loading}
-          disabled={sheetVisible}
-        />
+        <ChatInput disabled={sheetVisible} />
       </View>
+
+      {/* Hidden Original Input Section for future use */}
+      {false && (
+        <View style={styles.hiddenInputSection}>
+          <InputSection 
+            onSubmit={handleSubmit}
+            loading={loading}
+            disabled={sheetVisible}
+          />
+        </View>
+      )}
       
       {/* Analysis Sheet V2 */}
       {sheetVisible && (
@@ -420,13 +430,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mainContentContainer: {
-    padding: 16,
-    paddingTop: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
     flexGrow: 1,
   },
   bottomInputPanel: {
     paddingTop: 16,
     paddingHorizontal: 0,
     marginHorizontal: 0,
+  },
+  bottomChatPanel: {
+    paddingTop: 16,
+    paddingHorizontal: 16,
+    marginHorizontal: 0,
+  },
+  hiddenInputSection: {
+    display: 'none',
   },
 });
