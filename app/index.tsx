@@ -353,7 +353,7 @@ export default function HomeScreen() {
           }
         ]}
       >
-        <ChatInput disabled={sheetVisible} />
+        <ChatInput disabled={sheetVisible} showPrompts={false} />
       </View>
 
       {/* Hidden Original Input Section for future use */}

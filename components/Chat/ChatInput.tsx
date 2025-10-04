@@ -10,6 +10,7 @@ interface ChatInputProps {
   disabled?: boolean;
   placeholder?: string;
   onSubmit?: (message: string) => void;
+  showPrompts?: boolean;
 }
 
 const PROMPT_SUGGESTIONS = [
@@ -26,7 +27,8 @@ const PROMPT_SUGGESTIONS = [
 export function ChatInput({
   disabled = false,
   placeholder = "Ask questions, get instant analysis...",
-  onSubmit
+  onSubmit,
+  showPrompts = true
 }: ChatInputProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -55,31 +57,33 @@ export function ChatInput({
 
   return (
     <View style={styles.wrapper}>
-      <View style={styles.suggestionsWrapper}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.suggestionsContainer}
-          contentContainerStyle={styles.suggestionsContent}
-        >
-          {PROMPT_SUGGESTIONS.map((suggestion, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.suggestionBadge,
-                { backgroundColor: colors.surface, borderColor: colors.border }
-              ]}
-              onPress={() => handleSuggestionPress(suggestion)}
-              activeOpacity={0.7}
-              disabled={disabled}
-            >
-              <Text style={[styles.suggestionText, { color: colors.textSecondary }]}>
-                {suggestion}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+      {showPrompts && (
+        <View style={styles.suggestionsWrapper}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.suggestionsContainer}
+            contentContainerStyle={styles.suggestionsContent}
+          >
+            {PROMPT_SUGGESTIONS.map((suggestion, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.suggestionBadge,
+                  { backgroundColor: colors.surface, borderColor: colors.border }
+                ]}
+                onPress={() => handleSuggestionPress(suggestion)}
+                activeOpacity={0.7}
+                disabled={disabled}
+              >
+                <Text style={[styles.suggestionText, { color: colors.textSecondary }]}>
+                  {suggestion}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       <View style={[
         styles.container,

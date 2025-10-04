@@ -7,8 +7,7 @@ import {
   Image,
   Share,
   Dimensions,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
+  // Removed scroll event imports - no longer needed
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,7 +26,7 @@ import Animated, {
   withTiming,
   Extrapolate,
 } from 'react-native-reanimated';
-import { GestureDetector } from 'react-native-gesture-handler';
+// Removed gesture detector import - no longer needed for swipe gestures
 
 // Extracted imports
 import { ContentAnalysisSheetV2Props } from './types';
@@ -69,16 +68,14 @@ export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
   const [chatMessages, setChatMessages] = useState<string[]>([]);
   const [chatKey, setChatKey] = useState(0);
 
-  // Animation values
+  // Animation values - only keep flip animation for perspective carousel
   const flipAnimation = useSharedValue(0);
-  const scrollY = useSharedValue(0);
+  // Removed scrollY - no longer needed for header animations
 
-  // Custom hooks
+  // Custom hooks - simplified without gesture handling
   const {
     tabTransition,
     handleTabChange,
-    analysisPanGesture,
-    chatPanGesture,
     resetTabAnimation,
   } = useTabGestures({ onTabChange: setActiveTab });
 
@@ -106,10 +103,13 @@ export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
     console.log('Chat message submitted:', message);
     setChatMessages(prev => [...prev, message]);
     setInitialChatMessage(message);
-    setActiveTab('chat');
     // Force re-mount of ChatScreen with new message
     setChatKey(prev => prev + 1);
-  }, []);
+    // Switch to chat tab after setting up the message
+    setTimeout(() => {
+      handleTabChange('chat');
+    }, 100);
+  }, [handleTabChange]);
 
   // This is now handled by the useTabGestures hook
 
@@ -175,7 +175,6 @@ export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
       // Reset state when closing
       setSelectedPerspective(null);
       setExpandedItems(new Set());
-      scrollY.value = 0;
       flipAnimation.value = 0;
       resetTabAnimation();
       setActiveTab('analysis');
@@ -184,19 +183,10 @@ export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
       setChatKey(0);
       onClose();
     }
-  }, [onClose, scrollY, flipAnimation, resetTabAnimation]);
+  }, [onClose, flipAnimation, resetTabAnimation]);
 
 
-  // Handle scroll event
-  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    scrollY.value = event.nativeEvent.contentOffset.y;
-  }, [scrollY]);
-  
-  // Handle scroll to top
-  const handleScrollToTop = useCallback(() => {
-    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-    scrollY.value = withTiming(0, { duration: 300 });
-  }, []);
+  // Removed scroll handlers - no longer needed for header animations
   
   // Handle share
   const handleShare = useCallback(async () => {
@@ -253,130 +243,7 @@ export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
     };
   });
 
-  // Animated styles for header transformation
-  
-  // Main header container animation
-  const headerContainerStyle = useAnimatedStyle(() => {
-    const translateY = interpolate(
-      scrollY.value,
-      [0, ANIMATION_CONFIG.SCROLL_DISTANCE],
-      [0, -180],
-      Extrapolate.CLAMP
-    );
-    
-    return {
-      transform: [{ translateY }],
-    };
-  });
-  
-  // Icon animation - shrink and move up
-  const iconStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
-      scrollY.value,
-      [0, ANIMATION_CONFIG.SCROLL_DISTANCE],
-      [1, 0],
-      Extrapolate.CLAMP
-    );
-    
-    const opacity = interpolate(
-      scrollY.value,
-      [0, ANIMATION_CONFIG.SCROLL_DISTANCE * 0.5],
-      [1, 0],
-      Extrapolate.CLAMP
-    );
-    
-    return {
-      transform: [{ scale }],
-      opacity,
-    };
-  });
-  
-  // Title animation - move up and shrink
-  const titleStyle = useAnimatedStyle(() => {
-    const translateY = interpolate(
-      scrollY.value,
-      [0, ANIMATION_CONFIG.SCROLL_DISTANCE],
-      [0, -80],
-      Extrapolate.CLAMP
-    );
-    
-    const scale = interpolate(
-      scrollY.value,
-      [0, ANIMATION_CONFIG.SCROLL_DISTANCE],
-      [1, 0.7],
-      Extrapolate.CLAMP
-    );
-    
-    return {
-      transform: [{ translateY }, { scale }],
-    };
-  });
-  
-  // Description fade out
-  const descriptionStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      scrollY.value,
-      [0, ANIMATION_CONFIG.SCROLL_DISTANCE * 0.5],
-      [1, 0],
-      Extrapolate.CLAMP
-    );
-    
-    const translateY = interpolate(
-      scrollY.value,
-      [0, ANIMATION_CONFIG.SCROLL_DISTANCE],
-      [0, -20],
-      Extrapolate.CLAMP
-    );
-    
-    return {
-      opacity,
-      transform: [{ translateY }],
-    };
-  });
-  
-  // Compact header fade in
-  const compactHeaderStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      scrollY.value,
-      [ANIMATION_CONFIG.SCROLL_DISTANCE * 0.7, ANIMATION_CONFIG.SCROLL_DISTANCE],
-      [0, 1],
-      Extrapolate.CLAMP
-    );
-    
-    const translateY = interpolate(
-      scrollY.value,
-      [ANIMATION_CONFIG.SCROLL_DISTANCE * 0.5, ANIMATION_CONFIG.SCROLL_DISTANCE],
-      [20, 0],
-      Extrapolate.CLAMP
-    );
-    
-    return {
-      opacity,
-      transform: [{ translateY }],
-    };
-  });
-  
-  // Buttons animation
-  const buttonsStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      scrollY.value,
-      [ANIMATION_CONFIG.SCROLL_DISTANCE * 0.6, ANIMATION_CONFIG.SCROLL_DISTANCE],
-      [0, 1],
-      Extrapolate.CLAMP
-    );
-    
-    const scale = interpolate(
-      scrollY.value,
-      [ANIMATION_CONFIG.SCROLL_DISTANCE * 0.6, ANIMATION_CONFIG.SCROLL_DISTANCE],
-      [0.8, 1],
-      Extrapolate.CLAMP
-    );
-    
-    return {
-      opacity,
-      transform: [{ scale }],
-    };
-  });
+  // Removed all header scroll animations - no longer needed
 
   // Tab transition animated styles
   const analysisTabStyle = useAnimatedStyle(() => {
@@ -493,32 +360,11 @@ export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
         enableContentPanningGesture={true}
         enableHandlePanningGesture={true}
       >
-      {/* Tab Navigation at the top */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'analysis' && styles.tabButtonActive]}
-          onPress={() => handleTabChange('analysis')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.tabText, activeTab === 'analysis' && styles.tabTextActive]}>
-            Analysis
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'chat' && styles.tabButtonActive]}
-          onPress={() => handleTabChange('chat')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.tabText, activeTab === 'chat' && styles.tabTextActive]}>
-            Chat
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* Removed visible tab navigation - switching happens via chat interactions */}
 
       {/* Content Container with Tab Animation */}
       <View style={{ flex: 1, position: 'relative' }}>
-        {/* Analysis Tab Content - No gesture wrapper on ScrollView */}
+        {/* Analysis Tab Content - Removed swipe gestures */}
         <Animated.View style={[
           {
             position: 'absolute',
@@ -537,26 +383,27 @@ export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
             contentContainerStyle={[styles.scrollContent, { paddingBottom: LAYOUT_CONFIG.ANALYSIS_CONTENT_BOTTOM_PADDING }]}
             bounces={true}
             alwaysBounceVertical={true}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
+            // Removed scroll handler - no longer needed for animations
+            // onScroll={handleScroll}
+            // scrollEventThrottle={16}
           >
           {isLoading ? (
             <Text style={styles.loadingText}>Analyzing content...</Text>
           ) : (
             <>
-              {/* Full Header Content that scrolls */}
-              <Animated.View style={[styles.scrollableHeader, headerContainerStyle]}>
-                <Animated.Image
+              {/* Simplified Header Content - No animations */}
+              <View style={styles.scrollableHeader}>
+                <Image
                   source={displayInfo.icon}
-                  style={[styles.headingIcon, iconStyle]}
+                  style={styles.headingIcon}
                 />
-                <Animated.Text style={[styles.headingTitle, titleStyle]}>
+                <Text style={styles.headingTitle}>
                   {displayInfo.title}
-                </Animated.Text>
-                <Animated.Text style={[styles.headingDescription, descriptionStyle]}>
+                </Text>
+                <Text style={styles.headingDescription}>
                   {displayInfo.description}
-                </Animated.Text>
-              </Animated.View>
+                </Text>
+              </View>
 
             {/* Shared Content Section */}
             <SharedContent
@@ -722,7 +569,7 @@ export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
           </BottomSheetScrollView>
         </Animated.View>
 
-        {/* Chat Tab Content - No gesture wrapper */}
+        {/* Chat Tab Content - Removed swipe gestures */}
         <Animated.View style={[
           {
             position: 'absolute',
@@ -730,10 +577,24 @@ export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
             left: 0,
             right: 0,
             bottom: 0,
-            zIndex: activeTab === 'chat' ? 1 : 0
+            zIndex: activeTab === 'chat' ? 1 : 0,
+            flex: 1
           },
           chatTabStyle
         ]}>
+          {/* Chat Header with Back Button */}
+          <View style={styles.chatHeader}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => handleTabChange('analysis')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="arrow-back" size={24} color="rgba(0, 0, 0, 0.8)" />
+            </TouchableOpacity>
+            <Text style={styles.chatTitle}>Ask Questions</Text>
+            <View style={styles.headerSpacer} />
+          </View>
+
           <View style={styles.chatContentWrapper}>
               <ChatScreen
                 key={`chat-${chatKey}`}
@@ -741,6 +602,12 @@ export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
                 aiModel="gpt-3.5-turbo"
                 enableImages={true}
                 initialUserMessage={initialChatMessage ? initialChatMessage : undefined}
+                context={{
+                  url: content,
+                  sharedContent: sharedContent,
+                  analysis: analysis,
+                  contentType: sharedContentType,
+                }}
                 onSendMessage={(message) => {
                   console.log('Analysis chat message sent:', message);
                   setChatMessages(prev => [...prev, message]);
@@ -750,13 +617,18 @@ export function ContentAnalysisSheetV2(props: ContentAnalysisSheetV2Props) {
         </Animated.View>
       </View>
 
-      {/* Chat Input - Only visible in analysis tab */}
+      {/* Chat Input - Always visible in analysis tab */}
       {activeTab === 'analysis' && (
         <View style={styles.fixedChatInputContainer}>
-          <ChatInputLight
-            onSubmit={handleChatSubmit}
-            placeholder="Ask about this content..."
-          />
+          <LinearGradient
+            colors={['transparent', 'rgba(0, 0, 0, 0.8)']}
+            style={styles.chatInputGradient}
+          >
+            <ChatInputLight
+              onSubmit={handleChatSubmit}
+              placeholder="Ask about this content..."
+            />
+          </LinearGradient>
         </View>
       )}
       </BottomSheet>
@@ -776,7 +648,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    marginTop: 60,
+    marginTop: 0, // Removed top margin since no tab switcher
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -859,46 +731,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
   },
-  // Header styles
+  // Header styles - simplified
   scrollableHeader: {
     alignItems: 'center',
     paddingBottom: 20,
-  },
-  fixedCompactHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 60,
-    zIndex: 100,
-    elevation: 100,
-  },
-  compactHeaderContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    height: 60,
-  },
-  compactHeaderTitle: {
-    fontSize: 22,
-    fontFamily: fonts.serifRegular,
-    color: THEME_COLORS.default,
-    flex: 1,
-    textAlign: 'center',
-  },
-  compactHeaderButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   // Detection items styles
   detectionsList: {
@@ -985,9 +821,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    zIndex: 1000,
+    elevation: 1000,
+  },
+  chatInputGradient: {
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 120,
+    paddingTop: 60,
+    paddingBottom: 80,
   },
   chatBottomSheetBackground: {
     borderTopLeftRadius: 30,
@@ -1008,16 +848,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 16,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'transparent',
   },
   chatTitle: {
     fontSize: 18,
     fontFamily: fonts.semiBold,
     color: THEME_COLORS.default,
+    textAlign: 'center',
+    flex: 1,
   },
-  chatCloseButton: {
-    padding: 8,
+  backButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  },
+  headerSpacer: {
+    width: 48, // Same width as back button for centering
   },
   chatContent: {
     flex: 1,
@@ -1026,11 +875,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   chatContentWrapper: {
-    position: 'absolute',
-    top: 60,
-    left: 0,
-    right: 0,
-    bottom: 100,
+    flex: 1,
     backgroundColor: 'transparent',
   },
   chatPlaceholder: {
@@ -1040,40 +885,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
-  tabContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    backgroundColor: 'transparent',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
-    height: 60,
-    paddingHorizontal: 20,
-    zIndex: 200,
-    elevation: 200,
-  },
-  tabButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-  },
-  tabButtonActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: 'rgba(0, 0, 0, 0.6)',
-    marginBottom: -1,
-  },
-  tabText: {
-    fontSize: 16,
-    fontFamily: fonts.semiBold,
-    color: 'rgba(0, 0, 0, 0.4)',
-  },
-  tabTextActive: {
-    color: 'rgba(0, 0, 0, 0.8)',
-  },
+  // Removed tab switcher styles - no longer needed
   chatInnerContainer: {
     flex: 1,
     paddingBottom: 200, // Space for input at bottom

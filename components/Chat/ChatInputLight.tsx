@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, ScrollView, Text, Platform } from 'react-native';
-import { BlurView } from 'expo-blur';
+// Removed BlurView import - no longer using blur effects
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { fonts } from '../../constants/fonts';
@@ -9,6 +9,7 @@ interface ChatInputLightProps {
   disabled?: boolean;
   placeholder?: string;
   onSubmit?: (message: string) => void;
+  showPrompts?: boolean;
 }
 
 const PROMPT_SUGGESTIONS = [
@@ -35,7 +36,8 @@ const lightColors = {
 export function ChatInputLight({
   disabled = false,
   placeholder = "Ask questions, get instant analysis...",
-  onSubmit
+  onSubmit,
+  showPrompts = true
 }: ChatInputLightProps) {
   const styles = createStyles();
   const [message, setMessage] = useState('');
@@ -64,33 +66,35 @@ export function ChatInputLight({
 
   return (
     <View style={styles.wrapper}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.suggestionsContainer}
-        contentContainerStyle={styles.suggestionsContent}
-      >
-        {PROMPT_SUGGESTIONS.map((suggestion, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[styles.suggestionBadgeContainer, disabled && { opacity: 0.5 }]}
-            onPress={() => handleSuggestionPress(suggestion)}
-            activeOpacity={0.7}
-            disabled={disabled}
-          >
-            <BlurView intensity={20} style={styles.suggestionBadge}>
-              <Text style={styles.suggestionText}>
-                {suggestion}
-              </Text>
-            </BlurView>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {showPrompts && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.suggestionsContainer}
+          contentContainerStyle={styles.suggestionsContent}
+        >
+          {PROMPT_SUGGESTIONS.map((suggestion, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.suggestionBadgeContainer, disabled && { opacity: 0.5 }]}
+              onPress={() => handleSuggestionPress(suggestion)}
+              activeOpacity={0.7}
+              disabled={disabled}
+            >
+              <View style={styles.suggestionBadge}>
+                <Text style={styles.suggestionText}>
+                  {suggestion}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       <View style={[styles.inputContainer, disabled && { opacity: 0.5 }]}>
-        <BlurView intensity={20} style={styles.container}>
+        <View style={styles.container}>
           <View style={styles.iconContainer}>
-            <Ionicons name="chatbubble-outline" size={20} color={lightColors.primary} />
+            <Ionicons name="chatbubble-outline" size={20} color={lightColors.text} />
           </View>
 
           <TextInput
@@ -120,7 +124,7 @@ export function ChatInputLight({
               color={message.trim() ? lightColors.primary : lightColors.textSecondary}
             />
           </TouchableOpacity>
-        </BlurView>
+        </View>
       </View>
     </View>
   );
@@ -134,10 +138,11 @@ function createStyles() {
     suggestionsContainer: {
       marginBottom: 12,
       maxHeight: 40,
+      marginHorizontal: -20, // Extend beyond parent's padding to reach screen edges
     },
     suggestionsContent: {
       flexDirection: 'row',
-      paddingRight: 16,
+      paddingHorizontal: 20, // Add padding back for proper spacing from screen edges
     },
     suggestionBadgeContainer: {
       marginRight: 8,
@@ -150,8 +155,9 @@ function createStyles() {
       paddingVertical: 8,
       borderRadius: 20,
       borderWidth: 1,
-      backgroundColor: lightColors.background,
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
       borderColor: lightColors.border,
+      backdropFilter: 'blur(10px)',
     },
     suggestionText: {
       fontSize: 14,
@@ -169,8 +175,9 @@ function createStyles() {
       paddingVertical: 12,
       borderRadius: 16,
       borderWidth: 1,
-      backgroundColor: lightColors.background,
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
       borderColor: lightColors.border,
+      backdropFilter: 'blur(10px)',
     },
     iconContainer: {
       marginRight: 12,
